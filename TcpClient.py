@@ -4,6 +4,7 @@ import threading
 from queue import Queue
 import queue
 import pickle
+import sys
 
 
 class TaskCommand(object):
@@ -14,10 +15,13 @@ class TaskCommand(object):
         self.data = data
 
     def DataBytes(self):
-        return pickle.dumps(self.data)
+        return pickle.dumps(self)
 
     def Bytes2Data(self, bbs):
         return pickle.loads(bbs)
+
+    def Length(self):
+        return sys.getsizeof(self.type)+len(self.data)
 
 class ClientCommand(object):
     """ A command to the client thread.
@@ -98,9 +102,10 @@ class SocketClientThread(threading.Thread):
         self.reply_q.put(reply)
 
     def _handle_SEND(self, cmd):
-        header = struct.pack('<L', len(cmd.data))
+        ll = cmd.data.DataBytes()
+        header = struct.pack('<L', len(ll))
         try:
-            self.socket.sendall(header + cmd.data.encode())
+            self.socket.sendall(header + ll)
             self.reply_q.put(self._success_reply())
         except IOError as e:
             self.reply_q.put(self._error_reply(str(e)))
@@ -109,7 +114,7 @@ class SocketClientThread(threading.Thread):
         try:
             header_data = self._recv_n_bytes(4)
             if len(header_data) == 4:
-                msg_len = struct.unpack('<L', header_data)[0]
+                msg_len = struct.unpack('<L', bytes(header_data))[0]
                 data = self._recv_n_bytes(msg_len)
                 if len(data) == msg_len:
                     self.reply_q.put(self._success_reply(data))
@@ -122,12 +127,12 @@ class SocketClientThread(threading.Thread):
         """ Convenience method for receiving exactly n bytes from
             self.socket (assuming it's open and connected).
         """
-        data = ''
+        data = []
         while len(data) < n:
             chunk = self.socket.recv(n - len(data))
             if chunk == '':
                 break
-            data += chunk
+            data+= chunk
         return data
 
     def _error_reply(self, errstr):

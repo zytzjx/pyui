@@ -14,7 +14,7 @@ def handle_PROFILENAME(datacmd):
 
 def handle_IMAGE(datacmd):
     filepath = '/home/pi/Desktop/pyUI/curimage.jpg'
-    with open("filepath", "rb") as image:
+    with open(filepath, "rb") as image:
         f = image.read()
         b = bytearray(f)
         client.cmd_q.put(ClientCommand(ClientCommand.SEND, TaskCommand(TaskCommand.IMAGE, b)))
@@ -43,9 +43,10 @@ while True:
     client.cmd_q.put(ClientCommand(ClientCommand.RECEIVE, ""))
     reply = client.reply_q.get(True)
     print('sct1: ', reply.type, reply.data)
-    datacmd = pickle.loads(reply.data)
+    datacmd = pickle.loads(bytes(reply.data))
     print(datacmd)
     handlers[datacmd.type](datacmd)
+    #client.alive.set()
 
 
 client.cmd_q.put(ClientCommand(ClientCommand.CLOSE))
