@@ -63,8 +63,8 @@ class SocketClientThread(threading.Thread):
         super(SocketClientThread, self).__init__()
         self.cmd_q = cmd_q or Queue()
         self.reply_q = reply_q or Queue()
-        self.alive = threading.Event()
-        self.alive.set()
+        #self.alive = threading.Event()
+        #self.alive.set()
         self.socket = None
 
         self.handlers = {
@@ -75,7 +75,7 @@ class SocketClientThread(threading.Thread):
         }
 
     def run(self):
-        while self.alive.isSet():
+        while True: #or self.alive.isSet():
             try:
                 # Queue.get with timeout to allow checking self.alive
                 cmd = self.cmd_q.get()
@@ -84,7 +84,7 @@ class SocketClientThread(threading.Thread):
                 continue
 
     def join(self, timeout=None):
-        self.alive.clear()
+        #self.alive.clear()
         threading.Thread.join(self, timeout)
 
     def _handle_CONNECT(self, cmd):

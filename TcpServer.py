@@ -129,17 +129,14 @@ def SendProfile(profile):
 def GetImage():
     global threads
     r.acquire()
-    print("getimage++")
     data=TaskCommand(TaskCommand.IMAGE, "imagefile")
     for t in threads:
         t.SendDataToClient(data)
     r.release()
-    print("getimage--")
 
 def PrintImage():
     global threads
     r.acquire()
-    print("PrintImage++")
     for t in threads:
         if t.reply_q.empty():
             continue
@@ -147,7 +144,6 @@ def PrintImage():
         if reply!=None and reply.type!=ClientReply.ERROR:
             print(str(reply.data.type)+str(len(reply.data.data)))
     r.release()
-    print("PrintImage--")
 
 def GetResult():
     global threads

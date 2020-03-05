@@ -10,3 +10,4 @@ export DISPLAY=:0
 #X -nocursor -s 0 -dpms &
 /home/pi/Desktop/pyUI/start.sh &
 
+sudo apt install python3-opencv
