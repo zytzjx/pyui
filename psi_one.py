@@ -12,6 +12,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEven
 from PyQt5.uic import loadUi
 import logging
 from settings import Settings
+import ImageLabel
 
 
 files = []
@@ -65,6 +66,7 @@ class UISettings(QDialog):
         self.pbSetting.clicked.connect(self.on_settingclick)
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
+        self.leProfile.hide()
         #self.resize(800, 600) 
     #def mouseMoveEvent(self, evt: QMouseEvent) -> None:
     #    logging.info(str(evt.pos().x())+"=="+str(evt.pos().y())) 
@@ -146,28 +148,37 @@ class UISettings(QDialog):
             self.imageTop.isProfile = True
             self.imageLeft.isProfile = True
             self.imageRight.isProfile = True
+            self.leProfile.show()
+            self.comboBox.hide()
         else:
             self.imageTop.isProfile = False
             self.imageLeft.isProfile = False
             self.imageRight.isProfile = False
+            self.leProfile.hide()
+            self.comboBox.show()
 
     @pyqtSlot()
     def on_CameraChange(self):
         if self.tabWidget.currentIndex()==0:
             self.imageTop.setImageScale()
-            self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
+            self.pixmap = QPixmap('iphone6s_3_s1.jpg')
             logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
             self.imageTop.imagepixmap = self.pixmap
+            self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
+            self.imageTop.SetProfile("iphone6s_top_1","iphone6s_top_1.jpg")
         elif self.tabWidget.currentIndex()==1:
             self.imageLeft.setImageScale()
             self.pixmap = QPixmap('/home/pi/Desktop/pyUI/curimage.jpg')
             logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
             self.imageLeft.imagepixmap = self.pixmap
+            self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
+            self.imageTop.SetProfile("iphone6s_top_2","iphone6s_top_2.jpg")
         else:
             self.imageRight.setImageScale()
             self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
             logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
             self.imageRight.imagepixmap = self.pixmap
+            self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
 
 
     @pyqtSlot()

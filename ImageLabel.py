@@ -2,8 +2,18 @@ from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
 from PyQt5.QtWidgets import (QApplication, QDialog, QStyleFactory, QLabel)
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
 import logging
+import profiledata
+import os
+import sys
+import enum
+
+class CAMERA(enum.Enum):
+   LEFT = 0
+   TOP = 1
+   RIGHT = 2
 
 class ImageLabel(QLabel):
+    #LEFTCAMERA, TOPCAMERA, RIGHTCAMERA=range(3)
     def __init__(self, parent=None):
         super(ImageLabel, self).__init__(parent)
         self.setMouseTracking(True)
@@ -20,7 +30,25 @@ class ImageLabel(QLabel):
         self.screwW = 24
         self.screwH = 24
         self._isProfile = False
+        self.ProfilePoint=[]
+        self._camerapoisition=CAMERA.TOP
+        self.profile=profiledata.profile("","")
+        self._indexscrew=0
 
+    def fileprechar(self, argument):
+        switcher = {
+            CAMERA.LEFT: "L",
+            CAMERA.TOP: "T",
+            CAMERA.RIGHT: "R",
+        }
+        return switcher.get(argument, "Invalid")
+
+    def SetProfile(self, profilename, filename):
+        self.profile.profilename = profilename
+        self.profile.filename = filename
+
+    def SetCamera(self, which):
+        self._camerapoisition = which
 
     def setImageScale(self):
         if self.w == 0 or self.h ==0:
@@ -82,8 +110,32 @@ class ImageLabel(QLabel):
         
         currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
         cropQPixmap = self._imagepixmapback.copy(currentQRect)
-        cropQPixmap.save('output.png')
+        curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
+        profilepath=os.path.join(curpath,"profiles", self.profile.profilename)
+        filename = self.fileprechar(self._camerapoisition)+str(self._indexscrew)+".png" 
+        profilepath=os.path.join(profilepath, filename)
+        self._indexscrew+=1
+        cropQPixmap.save(profilepath)
+        screwpoint = profiledata.screw(self.profile.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
+        self.ProfilePoint.append(screwpoint)
+        sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
+        profiletxt = os.path.join(os.path.dirname(profilepath) , self.profile.profilename+".txt")
+        self.append_new_line(profiletxt, sinfo)
 
+
+
+    def append_new_line(self, file_name, text_to_append):
+        """Append given text as a new line at the end of file"""
+        # Open the file in append & read mode ('a+')
+        with open(file_name, "a+") as file_object:
+            # Move read cursor to the start of file.
+            file_object.seek(0)
+            # If file is not empty then append '\n'
+            data = file_object.read(100)
+            if len(data) > 0:
+                file_object.write("\n")
+            # Append text at the end of file
+            file_object.write(text_to_append)
 
 
     def DrawImage(self, x, y, clr = Qt.red):
@@ -102,6 +154,7 @@ class ImageLabel(QLabel):
         # draw rectangle on painter
         painterInstance.setPen(penRectangle)
         painterInstance.drawEllipse(QPoint(x * self.scalex, y*self.scaley),25,25)
+        #self.ProfilePoint.append(QPoint(x * self.scalex, y*self.scaley))
 
         # set pixmap onto the label widget
         self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    

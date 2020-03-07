@@ -211,6 +211,13 @@
                </widget>
               </item>
               <item>
+               <widget class="MatchBoxLineEdit" name="leProfile">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QComboBox" name="comboBox"/>
               </item>
               <item>
@@ -306,7 +313,7 @@
           <enum>QTabWidget::West</enum>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tbMain">
           <attribute name="title">
