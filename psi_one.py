@@ -7,6 +7,7 @@ import picamera
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (QApplication, QDialog, QStyleFactory, QLineEdit)
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
 from PyQt5.uic import loadUi
@@ -67,6 +68,28 @@ class UISettings(QDialog):
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
         self.leProfile.hide()
+        self.setStyleSheet('''
+        QPushButton{background-color:rgba(255,178,0,50%);
+            color: white;   
+            border-radius: 10px;  
+            border: 2px groove gray; 
+            border-style: outset;}
+		QPushButton:hover{background-color:white; 
+            color: black;}
+		QPushButton:pressed{background-color:rgb(85, 170, 255); 
+            border-style: inset; }
+        QWidget#Dialog{
+            background:gray;
+            border-top:1px solid white;
+            border-bottom:1px solid white;
+            border-left:1px solid white;
+            border-top-left-radius:10px;
+            border-bottom-left-radius:10px;
+        }''')
+        #self.on_CameraChange()
+        #self.setWindowOpacity(0.5) # 设置窗口透明度
+        #self.setAttribute(Qt.WA_TranslucentBackground) # 设置窗口背景透明
+
         #self.resize(800, 600) 
     #def mouseMoveEvent(self, evt: QMouseEvent) -> None:
     #    logging.info(str(evt.pos().x())+"=="+str(evt.pos().y())) 
@@ -161,6 +184,7 @@ class UISettings(QDialog):
     def on_CameraChange(self):
         if self.tabWidget.currentIndex()==0:
             self.imageTop.setImageScale()
+            self.imageTop.SetProfile(self.leProfile.text(), "top.jpg")
             self.pixmap = QPixmap('iphone6s_3_s1.jpg')
             logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
             self.imageTop.imagepixmap = self.pixmap
@@ -168,6 +192,7 @@ class UISettings(QDialog):
             self.imageTop.SetProfile("iphone6s_top_1","iphone6s_top_1.jpg")
         elif self.tabWidget.currentIndex()==1:
             self.imageLeft.setImageScale()
+            self.imageLeft.SetProfile(self.leProfile.text(), "left.jpg")
             self.pixmap = QPixmap('/home/pi/Desktop/pyUI/curimage.jpg')
             logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
             self.imageLeft.imagepixmap = self.pixmap
@@ -175,6 +200,7 @@ class UISettings(QDialog):
             self.imageTop.SetProfile("iphone6s_top_2","iphone6s_top_2.jpg")
         else:
             self.imageRight.setImageScale()
+            self.imageRight.SetProfile(self.leProfile.text(), "right.jpg")
             self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
             logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
             self.imageRight.imagepixmap = self.pixmap
@@ -202,6 +228,10 @@ class UISettings(QDialog):
 
     @pyqtSlot()
     def on_startclick(self):
+        if self.leProfile.text()=="" and self.checkBox.isChecked():
+            error_dialog = QtWidgets.QErrorMessage(self)
+            error_dialog.showMessage('Oh no! Profile name is empty.') 
+            return             
         self.imageTop.setImageScale()
 
         self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
