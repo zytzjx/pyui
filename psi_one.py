@@ -12,8 +12,10 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QStyleFactory, QLineEdit)
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
 from PyQt5.uic import loadUi
 import logging
+import settings
 from settings import Settings
 import ImageLabel
+import json
 
 
 files = []
@@ -50,7 +52,7 @@ class UISettings(QDialog):
     index = 0
     w = 0
     h = 0
-    filepath=""
+    #filepath=""
     pixmap = None
     resized = pyqtSignal()
     def __init__(self, parent=None):
@@ -86,6 +88,9 @@ class UISettings(QDialog):
             border-top-left-radius:10px;
             border-bottom-left-radius:10px;
         }''')
+
+        self.config=settings.DEFAULTCONFIG
+
         #self.on_CameraChange()
         #self.setWindowOpacity(0.5) # 设置窗口透明度
         #self.setAttribute(Qt.WA_TranslucentBackground) # 设置窗口背景透明
@@ -99,7 +104,23 @@ class UISettings(QDialog):
     #    logging.info(str(evt.pos().x())+"=>"+str(evt.pos().y())) 
     #    super(UISettings, self).mousePressEvent(evt)
 
-    
+    def createprofiledirstruct(self, profiename):
+        if profiename == '':
+            return False
+        
+        if os.path.isfile('config.json'):
+            with open('config.json') as json_file:
+                self.config = json.load(json_file)
+
+        pathleft = os.path.join(self.config["profilepath"], profiename, "left")
+        pathtop = os.path.join(self.config["profilepath"], profiename, "top")
+        pathright = os.path.join(self.config["profilepath"], profiename, "right")
+        mode = 0o666
+        os.makedirs(pathleft, mode, True) 
+        os.makedirs(pathtop, mode, True) 
+        os.makedirs(pathright, mode, True) 
+
+
 
     def resizeEvent(self, event):
         self.resized.emit()
@@ -111,7 +132,7 @@ class UISettings(QDialog):
     def changeStyle(self, styleName):
         QApplication.setStyle(QStyleFactory.create(styleName))
         QApplication.setPalette(QApplication.style().standardPalette())
-
+'''
     def updateProfile(self):
         curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
         profilepath=os.path.join(curpath,"profiles")
@@ -126,7 +147,7 @@ class UISettings(QDialog):
         #self.index+=1
         filepath=files[self.index%len(files)]
         self.loadimage(filepath)
-
+'''
     def DrawImage(self, x, y, clr = Qt.red):
         # convert image file into pixmap
         #pixmap = QPixmap(self.filepath)
@@ -180,6 +201,34 @@ class UISettings(QDialog):
             self.leProfile.hide()
             self.comboBox.show()
 
+    def takephotoshow(self, cameraindex, picname, profilename):
+        #self.takephoto           
+
+        if ImageLabel.CAMERA.TOP==cameraindex:
+            self.imageTop.setImageScale()
+            self.imageTop.SetProfile(profilename, "top.jpg")
+            self.pixmap = QPixmap(picname)
+            logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
+            self.imageTop.imagepixmap = self.pixmap
+            self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
+            #self.imageTop.SetProfile("iphone6s_top_1","iphone6s_top_1.jpg")
+        elif ImageLabel.CAMERA.LEFT==cameraindex:
+            self.imageLeft.setImageScale()
+            self.imageLeft.SetProfile(profilename, "left.jpg")
+            self.pixmap = QPixmap(picname)
+            logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
+            self.imageLeft.imagepixmap = self.pixmap
+            self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
+            #self.imageTop.SetProfile("iphone6s_top_2","iphone6s_top_2.jpg")
+        else:
+            self.imageRight.setImageScale()
+            self.imageRight.SetProfile(profilename, "right.jpg")
+            self.pixmap = QPixmap(picname)
+            logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
+            self.imageRight.imagepixmap = self.pixmap
+            self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
+
+
     @pyqtSlot()
     def on_CameraChange(self):
         if self.tabWidget.currentIndex()==0:
@@ -232,6 +281,9 @@ class UISettings(QDialog):
             error_dialog = QtWidgets.QErrorMessage(self)
             error_dialog.showMessage('Oh no! Profile name is empty.') 
             return             
+        
+        self.createprofiledirstruct(self.leProfile.text())
+        
         self.imageTop.setImageScale()
 
         self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
@@ -239,14 +291,14 @@ class UISettings(QDialog):
         self.imageTop.imagepixmap = self.pixmap
         return
 
-        self.filepath = '/home/pi/Desktop/pyUI/curimage.jpg'
+        filepath = '/home/pi/Desktop/pyUI/curimage.jpg'
         with picamera.PiCamera() as camera:
             camera.resolution = (3280, 2464)
             camera.start_preview()
-            camera.capture(self.filepath)
+            camera.capture(filepath)
             camera.stop_preview()   
 
-        self.pixmap = QPixmap(self.filepath)
+        self.pixmap = QPixmap(filepath)
         logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
         self.imageTop.imagepixmap = self.pixmap
         #self.lblImage.setPixmap(self.pixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation)) 

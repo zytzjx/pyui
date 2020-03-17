@@ -43,6 +43,15 @@ class ImageLabel(QLabel):
         }
         return switcher.get(argument, "Invalid")
 
+    # get profile directory sub directory
+    def DirSub(self, argument):
+        switcher = {
+            CAMERA.LEFT: "left",
+            CAMERA.TOP: "top",
+            CAMERA.RIGHT: "right",
+        }
+        return switcher.get(argument, "Invalid")
+
     def SetProfile(self, profilename, filename):
         self.profile.profilename = profilename
         self.profile.filename = filename
@@ -113,13 +122,13 @@ class ImageLabel(QLabel):
         curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
         profilepath=os.path.join(curpath,"profiles", self.profile.profilename)
         filename = self.fileprechar(self._camerapoisition)+str(self._indexscrew)+".png" 
-        profilepath=os.path.join(profilepath, filename)
+        profilepath=os.path.join(profilepath, self.DirSub(self._camerapoisition), filename)
         self._indexscrew+=1
         cropQPixmap.save(profilepath)
         screwpoint = profiledata.screw(self.profile.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
         self.ProfilePoint.append(screwpoint)
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
-        profiletxt = os.path.join(os.path.dirname(profilepath) , self.profile.profilename+".txt")
+        profiletxt = os.path.join(os.path.dirname(profilepath),  self.DirSub(self._camerapoisition),  self.profile.profilename+".txt")
         self.append_new_line(profiletxt, sinfo)
 
 
