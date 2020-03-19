@@ -34,6 +34,7 @@ class ImageLabel(QLabel):
         self._camerapoisition=CAMERA.TOP
         self.profile=profiledata.profile("","")
         self._indexscrew=0
+        self.profilerootpath=os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])),"profiles")
 
     def fileprechar(self, argument):
         switcher = {
@@ -119,8 +120,7 @@ class ImageLabel(QLabel):
         
         currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
         cropQPixmap = self._imagepixmapback.copy(currentQRect)
-        curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
-        profilepath=os.path.join(curpath,"profiles", self.profile.profilename)
+        profilepath=os.path.join(self.profilerootpath, self.profile.profilename)
         filename = self.fileprechar(self._camerapoisition)+str(self._indexscrew)+".png" 
         profilepath=os.path.join(profilepath, self.DirSub(self._camerapoisition), filename)
         self._indexscrew+=1
@@ -128,7 +128,7 @@ class ImageLabel(QLabel):
         screwpoint = profiledata.screw(self.profile.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
         self.ProfilePoint.append(screwpoint)
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
-        profiletxt = os.path.join(os.path.dirname(profilepath),  self.DirSub(self._camerapoisition),  self.profile.profilename+".txt")
+        profiletxt = os.path.join(self.profilerootpath, self.profile.profilename, self.DirSub(self._camerapoisition),  self.profile.profilename+".txt")
         self.append_new_line(profiletxt, sinfo)
 
 

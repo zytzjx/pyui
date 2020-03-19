@@ -3,22 +3,22 @@ from dataclasses import dataclass
 
 @dataclass
 class profile:
-    profilename: str
-    filename:str
+    profilename=""
+    filename=""
 
-    def __init__(self, profilename: str, filename: str):
+    def __init__(self, profilename, filename):
         self.profilename = profilename
         self.filename = filename
 
 @dataclass
 class screw:
-    profilename: str
-    filename: str
-    Centerpoint: QPoint
-    lefttop: QPoint
-    rightbottom: QPoint
+    profilename=""
+    filename=""
+    Centerpoint= QPoint()
+    lefttop=QPoint
+    rightbottom=QPoint
 
-    def __init__(self, profilename: str, filename: str, cp: QPoint, lt: QPoint, rb: QPoint):
+    def __init__(self, profilename, filename, cp, lt, rb):
         self.profilename = profilename
         self.filename = filename    
         self.Centerpoint = cp

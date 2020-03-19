@@ -57,7 +57,7 @@ class UISettings(QDialog):
     resized = pyqtSignal()
     def __init__(self, parent=None):
         super(UISettings, self).__init__()
-        loadUi('psi_one.ui', self)
+        loadUi('psi_auto.ui', self)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.changeStyle('Fusion')
         self.pbClose.clicked.connect(self.close)
@@ -92,8 +92,8 @@ class UISettings(QDialog):
         self.config=settings.DEFAULTCONFIG
 
         #self.on_CameraChange()
-        #self.setWindowOpacity(0.5) # 设置窗口透明度
-        #self.setAttribute(Qt.WA_TranslucentBackground) # 设置窗口背景透明
+        #self.setWindowOpacity(0.5) 
+        #self.setAttribute(Qt.WA_TranslucentBackground) 
 
         #self.resize(800, 600) 
     #def mouseMoveEvent(self, evt: QMouseEvent) -> None:
@@ -115,7 +115,7 @@ class UISettings(QDialog):
         pathleft = os.path.join(self.config["profilepath"], profiename, "left")
         pathtop = os.path.join(self.config["profilepath"], profiename, "top")
         pathright = os.path.join(self.config["profilepath"], profiename, "right")
-        mode = 0o666
+        mode = 0o777
         os.makedirs(pathleft, mode, True) 
         os.makedirs(pathtop, mode, True) 
         os.makedirs(pathright, mode, True) 
@@ -132,7 +132,7 @@ class UISettings(QDialog):
     def changeStyle(self, styleName):
         QApplication.setStyle(QStyleFactory.create(styleName))
         QApplication.setPalette(QApplication.style().standardPalette())
-'''
+
     def updateProfile(self):
         curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
         profilepath=os.path.join(curpath,"profiles")
@@ -147,7 +147,7 @@ class UISettings(QDialog):
         #self.index+=1
         filepath=files[self.index%len(files)]
         self.loadimage(filepath)
-'''
+
     def DrawImage(self, x, y, clr = Qt.red):
         # convert image file into pixmap
         #pixmap = QPixmap(self.filepath)
@@ -180,7 +180,7 @@ class UISettings(QDialog):
         stream.seek(0)
         image = Image.open(stream)
         imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        #qimage = QImage(imageq) #cast PIL.ImageQt object to QImage object -that´s the trick!!!
+        #qimage = QImage(imageq)
         #pixmap = QPixmap(qimage)
         pixmap = QPixmap.fromImage(imageq)
         self.imageTop.imagepixmap = pixmap
@@ -232,6 +232,7 @@ class UISettings(QDialog):
     @pyqtSlot()
     def on_CameraChange(self):
         if self.tabWidget.currentIndex()==0:
+            self.imageTop.profilerootpath = self.config["profilepath"]
             self.imageTop.setImageScale()
             self.imageTop.SetProfile(self.leProfile.text(), "top.jpg")
             self.pixmap = QPixmap('iphone6s_3_s1.jpg')
@@ -240,6 +241,7 @@ class UISettings(QDialog):
             self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
             self.imageTop.SetProfile("iphone6s_top_1","iphone6s_top_1.jpg")
         elif self.tabWidget.currentIndex()==1:
+            self.imageLeft.profilerootpath = self.config["profilepath"]
             self.imageLeft.setImageScale()
             self.imageLeft.SetProfile(self.leProfile.text(), "left.jpg")
             self.pixmap = QPixmap('/home/pi/Desktop/pyUI/curimage.jpg')
@@ -248,6 +250,7 @@ class UISettings(QDialog):
             self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
             self.imageTop.SetProfile("iphone6s_top_2","iphone6s_top_2.jpg")
         else:
+            self.imageRight.profilerootpath = self.config["profilepath"]
             self.imageRight.setImageScale()
             self.imageRight.SetProfile(self.leProfile.text(), "right.jpg")
             self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
@@ -283,12 +286,12 @@ class UISettings(QDialog):
             return             
         
         self.createprofiledirstruct(self.leProfile.text())
-        
-        self.imageTop.setImageScale()
+        self.on_CameraChange()
+        #self.imageTop.setImageScale()
 
-        self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
-        logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
-        self.imageTop.imagepixmap = self.pixmap
+        #self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
+        #logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
+        #self.imageTop.imagepixmap = self.pixmap
         return
 
         filepath = '/home/pi/Desktop/pyUI/curimage.jpg'

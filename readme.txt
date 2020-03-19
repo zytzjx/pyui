@@ -74,3 +74,7 @@ sudo mount -t tmpfs -o size=1024m myramdisk /tmp/ramdisk
 sudo nano /etc/fstab
 myramdisk  /tmp/ramdisk  tmpfs  defaults,size=1G,x-gvfs-show  0  0
 sudo mount -a
+
+
+pip install pyserial
+pip3 install pyserial
