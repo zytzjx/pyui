@@ -78,3 +78,11 @@ sudo mount -a
 
 pip install pyserial
 pip3 install pyserial
+
+pip install mprpc
+pip3 install mprpc
+
+#pip3 install gsocketpool
+
+pip3 install scp
+pip3 install paramiko

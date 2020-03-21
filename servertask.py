@@ -1,9 +1,8 @@
-#!/usr/bin/env python
-# coding: utf-8
- 
-#import pyjsonrpc
-from gevent.server import StreamServer
-from mprpc import RPCServer
+# _*_ coding:utf-8 _*_
+
+from xmlrpc.server import SimpleXMLRPCServer
+from socketserver import ThreadingMixIn
+import xmlrpc.client
 from datetime import datetime
 import RPi.GPIO as gp
 import os
@@ -18,9 +17,14 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEven
  
 import profiledata
 
-class RequestHandler(RPCServer):#pyjsonrpc.HttpRequestHandler):
+
+class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
+    pass
+
+
+class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def __init__(self):
-        RPCServer.__init__(self)
+        #RPCServer.__init__(self)
         self.imageresult0={}
         self.imageresult1={}
         self.imageresult2={}
@@ -54,7 +58,7 @@ class RequestHandler(RPCServer):#pyjsonrpc.HttpRequestHandler):
         return self._profilepath
 
     def CloseServer(self):
-        server.stop()
+        server.shutdown()
 
     def _callyanfunction(self, index):
         print('callyanfunction:' +self.profilename)
@@ -157,6 +161,11 @@ class RequestHandler(RPCServer):#pyjsonrpc.HttpRequestHandler):
         }
         return switcher.get(argument, "Invalid")
 
+    def imageDownload(self, index):
+        cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam
+        handle = open(cmd, 'rb')
+        return xmlrpc.client.Binary(handle.read())
+
     def capture(self, cam, IsDetect=True):
         cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         os.system(cmd)
@@ -201,28 +210,36 @@ class RequestHandler(RPCServer):#pyjsonrpc.HttpRequestHandler):
         else:
             return '{"aa":"bb"}'
 
- 
-if __name__ == "__main__": 
-    # Threading HTTP-Server
-    #http_server = pyjsonrpc.ThreadingHttpServer(
-    #    server_address = ('0.0.0.0', 8080),
-    #    RequestHandlerClass = RequestHandler
-    #)
-    app = QApplication(sys.argv)
+
+
+'''
+# 供客户端下载文件
+def image_get():
+    handle = open("boy.jpg", 'rb')
+    return xmlrpc.client.Binary(handle.read())
+
+
+# 供客户端上传文件
+def image_put(data):
+    handle = open("get_girl.jpg", 'wb')
+    handle.write(data.data)
+    handle.close()
+'''
+
+if __name__ == '__main__':
+    app = QApplication([])
+    server = ThreadXMLRPCServer(('localhost', 8888), allow_none=True) # 初始化
+    #server.register_function(image_put, 'image_put')
+    #server.register_function(image_get, 'image_get')
     handler = RequestHandler()
     handler.Init()
-    server = StreamServer(('0.0.0.0', 8080), handler)
-    print("Starting HTTP server ...")
-    print("URL: http://+:8080")
-    #server.serve_forever()
-
+    server.register_instance(handler)
+    print ("Listening for Client")
+    #server.serve_forever() # 保持等待调用状态
     try:
         #http_server.serve_forever()
         server.serve_forever()
     except KeyboardInterrupt:
-        #http_server.shutdown()
-        server.stop()
+        print("Exiting")
 
     handler.Uninit()
-
-    #sys.exit(app.exec_())

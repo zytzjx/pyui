@@ -16,6 +16,10 @@ import settings
 from settings import Settings
 import ImageLabel
 import json
+import threading
+
+from  serialstatus import FDProtocol
+import serial
 
 
 files = []
@@ -30,20 +34,33 @@ def listImages(path):
             if file.lower().endswith(('.png', '.jpg', '.jpeg')):
                 files.append(os.path.join(r, file))
 
-class ImageCheckThread(QThread):
-    signal = pyqtSignal('PyQt_PyObject')
-
+class StatusCheckThread(QThread):
+#https://kushaldas.in/posts/pyqt5-thread-example.html
     def __init__(self):
         QThread.__init__(self)
-        self.git_url = ""
+        self.serialport = "/dev/ttyUSB0"
+        self.exit_event = threading.Event()
 
     # run method gets called when we start the thread
     def run(self):
-        tmpdir = tempfile.mkdtemp()
-        cmd = "git clone {0} {1}".format(self.git_url, tmpdir)
-        subprocess.check_output(cmd.split())
-        # git clone done, now inform the main thread with the output
-        self.signal.emit(tmpdir)
+        ser = serial.serial_for_url('alt://{}'.format(self.serialport), baudrate=9600, timeout=1)
+    #ser = serial.Serial('/dev/ttyUSB0', baudrate=9600, timeout=1)
+        status=-1
+        with serial.threaded.ReaderThread(ser, FDProtocol) as statusser:
+            while not self.exit_event.is_set():
+                if statusser.proximityStatus and not statusser.ultraSonicStatus:
+                    if status!=1:
+                        status=1
+                        #do task start
+                elif not statusser.proximityStatus:
+                    if status!=2:
+                        status=2
+                        #start preview
+                elif statusser.ultraSonicStatus:
+                    if status != 2:
+                        status = 2
+            time.sleep(0.05)
+
 
 
 class UISettings(QDialog):
@@ -60,7 +77,7 @@ class UISettings(QDialog):
         loadUi('psi_auto.ui', self)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.changeStyle('Fusion')
-        self.pbClose.clicked.connect(self.close)
+        self.pbClose.clicked.connect(self.closeEvent)
         self.pbImageChange.clicked.connect(self.on_click)
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
@@ -70,6 +87,7 @@ class UISettings(QDialog):
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
         self.leProfile.hide()
+        self.previewEvent = threading.Event()
         self.setStyleSheet('''
         QPushButton{background-color:rgba(255,178,0,50%);
             color: white;   
@@ -90,6 +108,9 @@ class UISettings(QDialog):
         }''')
 
         self.config=settings.DEFAULTCONFIG
+
+        self.serialThread = StatusCheckThread()
+        self.serialThread.start()
 
         #self.on_CameraChange()
         #self.setWindowOpacity(0.5) 
@@ -120,6 +141,10 @@ class UISettings(QDialog):
         os.makedirs(pathtop, mode, True) 
         os.makedirs(pathright, mode, True) 
 
+    def closeEvent(self, event):
+        print("X is clicked")
+        self.serialThread.exit_event.set()
+        self.close()
 
 
     def resizeEvent(self, event):
@@ -168,6 +193,7 @@ class UISettings(QDialog):
         self.imageTop.setPixmap(self.pixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
         painterInstance.end()
 
+
     def PreviewCamera(self):
         # Create the in-memory stream
         stream = io.BytesIO()
@@ -185,6 +211,7 @@ class UISettings(QDialog):
         pixmap = QPixmap.fromImage(imageq)
         self.imageTop.imagepixmap = pixmap
         #self.lblImage.setPixmap(self.pixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))   
+
 
     @pyqtSlot()
     def btnstate(self):
@@ -205,6 +232,7 @@ class UISettings(QDialog):
         #self.takephoto           
 
         if ImageLabel.CAMERA.TOP==cameraindex:
+            self.imageTop.profilerootpath = self.config["profilepath"]
             self.imageTop.setImageScale()
             self.imageTop.SetProfile(profilename, "top.jpg")
             self.pixmap = QPixmap(picname)
@@ -213,6 +241,7 @@ class UISettings(QDialog):
             self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
             #self.imageTop.SetProfile("iphone6s_top_1","iphone6s_top_1.jpg")
         elif ImageLabel.CAMERA.LEFT==cameraindex:
+            self.imageLeft.profilerootpath = self.config["profilepath"]
             self.imageLeft.setImageScale()
             self.imageLeft.SetProfile(profilename, "left.jpg")
             self.pixmap = QPixmap(picname)
@@ -221,6 +250,7 @@ class UISettings(QDialog):
             self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
             #self.imageTop.SetProfile("iphone6s_top_2","iphone6s_top_2.jpg")
         else:
+            self.imageRight.profilerootpath = self.config["profilepath"]
             self.imageRight.setImageScale()
             self.imageRight.SetProfile(profilename, "right.jpg")
             self.pixmap = QPixmap(picname)
@@ -272,11 +302,9 @@ class UISettings(QDialog):
         sender = self.sender()
         clickevent = sender.text()
         if clickevent == u'Image UP':
-            self.index+=1
-            self.DrawImage(50,50)           
+            self.previewEvent.set() 
         else:
-            self.index-=1
-            self.PreviewCamera()
+            self.OnPreview()
 
     @pyqtSlot()
     def on_startclick(self):
@@ -307,8 +335,28 @@ class UISettings(QDialog):
         #self.lblImage.setPixmap(self.pixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation)) 
         #logging.info(str(self.lblImage.pixmap().width())+"X"+str(self.lblImage.pixmap().height()))
         #logging.info(str(self.w)+"X"+str(self.h))   
+    
+    def GetImageShow(self):
+        from PIL import Image
+        import urllib.request
 
+        url = 'http://127.0.0.1:5000/startpause'
+        urllib.request.urlopen(url)
+        time.sleep(0.1)
+        while True:
+            url = 'http://127.0.0.1:5000/preview'
+            image = Image.open(urllib.request.urlopen(url))
+            imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+            pixmap = QPixmap.fromImage(imageq)
+            self.imageTop.imagepixmap = pixmap
+            if self.previewEvent.is_set():
+                self.previewEvent.clear()
+                url = 'http://127.0.0.1:5000/startpause'
+                urllib.request.urlopen(url)
+                break
 
+    def OnPreview(self):
+        threading.Thread(target=self.GetImageShow).start()
  
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
