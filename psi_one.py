@@ -20,6 +20,8 @@ import threading
 
 from  serialstatus import FDProtocol
 import serial
+from xmlrpc.client import ServerProxy
+import xmlrpc.client
 
 
 files = []
@@ -112,6 +114,8 @@ class UISettings(QDialog):
         self.serialThread = StatusCheckThread()
         self.serialThread.start()
 
+        self.threadPreview=None
+
         #self.on_CameraChange()
         #self.setWindowOpacity(0.5) 
         #self.setAttribute(Qt.WA_TranslucentBackground) 
@@ -142,7 +146,7 @@ class UISettings(QDialog):
         os.makedirs(pathright, mode, True) 
 
     def closeEvent(self, event):
-        print("X is clicked")
+        self._shutdown()
         self.serialThread.exit_event.set()
         self.close()
 
@@ -336,27 +340,38 @@ class UISettings(QDialog):
         #logging.info(str(self.lblImage.pixmap().width())+"X"+str(self.lblImage.pixmap().height()))
         #logging.info(str(self.w)+"X"+str(self.h))   
     
-    def GetImageShow(self):
-        from PIL import Image
-        import urllib.request
+    def _shutdown(self):
+        client = ServerProxy("http://localhost:8888", allow_none=True)
+        client.CloseServer()
 
-        url = 'http://127.0.0.1:5000/startpause'
-        urllib.request.urlopen(url)
+
+    def _GetImageShow(self):
+        #from PIL import Image
+        #import urllib.request
+
+        client = ServerProxy("http://localhost:8888", allow_none=True)
+        #url = 'http://127.0.0.1:5000/startpause'
+        #urllib.request.urlopen(url)
+        logging.info(client.startpause())
         time.sleep(0.1)
         while True:
-            url = 'http://127.0.0.1:5000/preview'
-            image = Image.open(urllib.request.urlopen(url))
+            #url = 'http://127.0.0.1:5000/preview'
+            data = client.preview().data
+            image = Image.open(io.BytesIO(data))
             imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
             pixmap = QPixmap.fromImage(imageq)
             self.imageTop.imagepixmap = pixmap
             if self.previewEvent.is_set():
                 self.previewEvent.clear()
-                url = 'http://127.0.0.1:5000/startpause'
-                urllib.request.urlopen(url)
+                #url = 'http://127.0.0.1:5000/startpause'
+                #urllib.request.urlopen(url)
+                client.startpause()
                 break
 
     def OnPreview(self):
-        threading.Thread(target=self.GetImageShow).start()
+        if self.threadPreview==None or not self.threadPreview.is_alive():
+            self.threadPreview= threading.Thread(target=self._GetImageShow)
+            self.threadPreview.start()
  
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)

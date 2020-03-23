@@ -11,11 +11,17 @@ import time
 import shutil
 import threading
 
+import picamera
+import io
+from PIL import Image
+import logging
+
 from PyQt5.QtWidgets import (QApplication, QDialog)
 from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
  
 import profiledata
+import testScrew
 
 
 class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
@@ -25,9 +31,10 @@ class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
 class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def __init__(self):
         #RPCServer.__init__(self)
-        self.imageresult0={}
-        self.imageresult1={}
-        self.imageresult2={}
+        #self.imageresult0=[]
+        #self.imageresult1=[]
+        #self.imageresult2=[]
+        self.imageresults=[[],[],[]]
         self.profilename=""
         self.rootprofielpath=""
         self._profilepath=""
@@ -36,6 +43,78 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self._imagepixmapback = None
         self._curIndex=0
         self._indexscrew = 0
+
+        self.quit_event = threading.Event()
+        self.pause_event = threading.Event()
+        self.save_image_event = threading.Event()
+        self.save_complete_event = threading.Event()
+        self.image_ready = io.BytesIO()
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    def _setactivecamera(self, index=0):
+        if index==0:
+            print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing the camera A")
+            i2c = "i2cset -y 1 0x70 0x00 0x04"
+            os.system(i2c)
+            gp.output(7, False)
+            gp.output(11, False)
+            gp.output(12, True)
+
+    def _preview(self):
+        while True:
+            logging.info("preview: thread is starting...")
+            self.pause_event.wait()
+            self.pause_event.clear()
+            if self.quit_event.is_set():
+                break
+            self._setactivecamera(0)
+            stream = io.BytesIO()
+            with picamera.PiCamera() as camera:
+                camera.ISO = 50
+                camera.resolution=(640,480)
+                #camera.start_preview()
+                #time.sleep(2)
+                for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
+                    stream.seek(0)
+                    image = Image.open(stream)
+                    if self.save_image_event.is_set():
+                        # with open("foo.jpg", "w") as f:                
+                        #     image.save(f)
+                        if self.image_ready is None or self.image_ready.closed:
+                            self.image_ready = io.BytesIO()
+                        else:
+                            self.image_ready.seek(0)
+                            self.image_ready.truncate()
+                        image.save(self.image_ready, format='JPEG')
+                        self.save_complete_event.set()
+                        self.save_image_event.clear()
+                        
+                    stream.seek(0)
+                    stream.truncate()
+                    if self.pause_event.is_set():
+                        self.pause_event.clear()
+                        break
+            if self.quit_event.is_set():
+                break
+        logging.info("preview: thread is terminated")
+
+    def preview(self):
+        self.save_image_event.set()
+        self.save_complete_event.wait()
+        self.save_complete_event.clear()
+        self.image_ready.seek(0)
+        data = self.image_ready.read()
+        return xmlrpc.client.Binary(data)#send_file(image_ready, mimetype='image/jpeg')
+
+    def startpause(self):
+        self.pause_event.set()
+        return "OK"
+
+
+    def _shutdownpreview(self):
+        self.quit_event.set()
+        self.pause_event.set()        
+        return 'Server shutting down...'
 
     def cleanprofileparam(self):
         self._imagepixmapback = None
@@ -55,6 +134,14 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             self.profilename=pn
 
         self._profilepath= os.path.join(self.rootprofielpath, self.profilename)
+        pathleft = os.path.join(self._profilepath, "left")
+        pathtop = os.path.join(self._profilepath, "top")
+        pathright = os.path.join(self._profilepath, "right")
+        mode = 0o777
+        os.makedirs(pathleft, mode, True) 
+        os.makedirs(pathtop, mode, True) 
+        os.makedirs(pathright, mode, True) 
+
         return self._profilepath
 
     def CloseServer(self):
@@ -62,7 +149,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _callyanfunction(self, index):
         print('callyanfunction:' +self.profilename)
-        pass
+        self.imageresults[index] = testScrew.testScrews(os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".txt"), os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"), "/tmp/ramdisk/phoneimage_%d.jpg" % index)
 
     def _startdetectthread(self, index):
         t1 = threading.Thread(target=self._callyanfunction, args=(index,))
@@ -96,8 +183,6 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
         profiletxt = os.path.join(self._profilepath, self._DirSub(index),  self.profilename+".txt")
         self._append_new_line(profiletxt, sinfo)
-
-
 
     def _append_new_line(self, file_name, text_to_append):
         """Append given text as a new line at the end of file"""
@@ -146,12 +231,16 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         gp.output(16, True)
         gp.output(21, True)
         gp.output(22, True)
+
+        self._StartDaemon()
     
     #@pyjsonrpc.rpcmethod
     def Uninit(self):
         gp.output(7, False)
         gp.output(11, False)
         gp.output(12, True)
+
+        self._shutdownpreview()
 
     def _DirSub(self, argument):
         switcher = {
@@ -161,8 +250,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         }
         return switcher.get(argument, "Invalid")
 
-    def imageDownload(self, index):
+    def imageDownload(self, cam):
         cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam
+        '''
+        image = Image.open(cmd)
+        imagenew = image.resize((image.width/4, image.height/4))
+        from io import BytesIO
+        byte_io = BytesIO()
+        imagenew.save(byte_io, 'JPEG')
+        '''
         handle = open(cmd, 'rb')
         return xmlrpc.client.Binary(handle.read())
 
@@ -200,16 +296,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             gp.output(12, False)
         return self.capture(index, IsDetect)
 
-    def ResultTest(self, index):
-        if index==0:
-            return self.imageresult0
-        elif index==1:
-            return self.imageresult1
-        elif index==2:
-            return self.imageresult2
+    def ResultTest(self, index):       
+        if index>2:
+            return []
         else:
-            return '{"aa":"bb"}'
+            self.imageresults[index]
 
+    def _StartDaemon(self):
+        t = threading.Thread(target=self._preview, daemon=True)
+        t.start()
 
 
 '''
@@ -228,7 +323,7 @@ def image_put(data):
 
 if __name__ == '__main__':
     app = QApplication([])
-    server = ThreadXMLRPCServer(('localhost', 8888), allow_none=True) # 初始化
+    server = ThreadXMLRPCServer(('0.0.0.0', 8888), allow_none=True) # 初始化
     #server.register_function(image_put, 'image_put')
     #server.register_function(image_get, 'image_get')
     handler = RequestHandler()
@@ -241,5 +336,5 @@ if __name__ == '__main__':
         server.serve_forever()
     except KeyboardInterrupt:
         print("Exiting")
-
+    
     handler.Uninit()

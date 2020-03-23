@@ -75,14 +75,15 @@ sudo nano /etc/fstab
 myramdisk  /tmp/ramdisk  tmpfs  defaults,size=1G,x-gvfs-show  0  0
 sudo mount -a
 
+sudo apt install xscreensaver
 
 pip install pyserial
 pip3 install pyserial
 
-pip install mprpc
-pip3 install mprpc
+#pip install mprpc
+#pip3 install mprpc
 
 #pip3 install gsocketpool
 
-pip3 install scp
-pip3 install paramiko
+#pip3 install scp
+#pip3 install paramiko
