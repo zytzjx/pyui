@@ -39,6 +39,7 @@ def listImages(path):
 
 class StatusCheckThread(QThread):
 #https://kushaldas.in/posts/pyqt5-thread-example.html
+    signal = pyqtSignal(int)
     def __init__(self):
         QThread.__init__(self)
         self.serialport = "/dev/ttyUSB0"
@@ -60,11 +61,11 @@ class StatusCheckThread(QThread):
                         status=2
                         #start preview
                 elif statusser.ultraSonicStatus:
-                    if status != 2:
-                        status = 2
-            time.sleep(0.05)
-
-
+                    if status != 3:
+                        status = 3
+                self.signal.emit(status)
+                #time.sleep(0.05)
+                self.msleep(50)
 
 class UISettings(QDialog):
     """Settings dialog widget
@@ -83,7 +84,7 @@ class UISettings(QDialog):
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
         self.updateProfile()
-        self.resized.connect(self.someFunction)
+        #self.resized.connect(self.someFunction)
         self.pbSetting.clicked.connect(self.on_settingclick)
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
@@ -115,6 +116,7 @@ class UISettings(QDialog):
         self.config=settings.DEFAULTCONFIG
 
         self.serialThread = StatusCheckThread()
+        self.serialThread.signal.connect(self.StatusChange)
         #self.serialThread.start()
 
         self.threadPreview=None
@@ -131,30 +133,45 @@ class UISettings(QDialog):
     #    logging.info(str(evt.pos().x())+"=>"+str(evt.pos().y())) 
     #    super(UISettings, self).mousePressEvent(evt)
 
+    def StatusChange(self, value):
+        self.takelock.acquire()
+        print("value is :"+str(value))
+        self.takelock.release()
+
     #@staticmethod
     def createKeyboard(self):
         subprocess.Popen(["killall","matchbox-keyboa"])
         self.keyboardID = 0
-        if self.keyboardID == 0:
-            p = subprocess.Popen(["matchbox-keyboard", "--xid"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            self.keyboardID = int(p.stdout.readline())
+        
+        p = subprocess.Popen(["matchbox-keyboard", "--xid"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.keyboardID = int(p.stdout.readline())
+        threading.Thread(target=lambda a: print(p.stdout.readline()))
 
 
     def ShowKeyBoard(self):
-        self.createKeyboard()
-        logging.debug("capturing window 0x%x ", self.keyboardID)
-        embed_window = QtGui.QWindow.fromWinId(self.keyboardID)qa
-        embed_widget = QtWidgets.QWidget.createWindowContainer(embed_window)
-        infoWindow2 = QDialog(parent=self)
-        embed_widget.setMinimumWidth(600)
-        embed_widget.setMinimumHeight(300)
+        try:
+            self.createKeyboard()
+            if self.keyboardID == 0:
+                return
+            logging.debug("capturing window 0x%x ", self.keyboardID)
+            embed_window = QtGui.QWindow.fromWinId(self.keyboardID)
+            embed_widget = QtWidgets.QWidget.createWindowContainer(embed_window)
+            infoWindow2 = QDialog(parent=self)
+            embed_widget.setMinimumWidth(580)
+            embed_widget.setMinimumHeight(280)
+            hbox2 = QHBoxLayout()
+            hbox2.addWidget(embed_widget)
+            infoWindow2.setLayout(hbox2)
+            infoWindow2.show()
+        except:
+            pass
         #rect = self.geometry()
         #self.infoWindow2.setGeometry(rect.x()+rect.width(), rect.y()+rect.height(), 400, 300)
         #self.move(rect.x()+rect.width(), rect.y()+rect.height())
-        hbox2 = QHBoxLayout()
-        hbox2.addWidget(embed_widget)
-        infoWindow2.setLayout(hbox2)
-        infoWindow2.show()
+        #hbox2 = QHBoxLayout()
+        #hbox2.addWidget(embed_widget)
+        #infoWindow2.setLayout(hbox2)
+        #infoWindow2.show()
 
 
     def createprofiledirstruct(self, profiename):
@@ -164,14 +181,14 @@ class UISettings(QDialog):
         if os.path.isfile('config.json'):
             with open('config.json') as json_file:
                 self.config = json.load(json_file)
-
+        '''
         pathleft = os.path.join(self.config["profilepath"], profiename, "left")
         pathtop = os.path.join(self.config["profilepath"], profiename, "top")
         pathright = os.path.join(self.config["profilepath"], profiename, "right")
         mode = 0o777
         os.makedirs(pathleft, mode, True) 
         os.makedirs(pathtop, mode, True) 
-        os.makedirs(pathright, mode, True) 
+        os.makedirs(pathright, mode, True) '''
 
     def closeEvent(self, event):
         self._shutdown()
@@ -183,8 +200,8 @@ class UISettings(QDialog):
         self.resized.emit()
         return super(UISettings, self).resizeEvent(event)
 
-    def someFunction(self):
-        logging.info(str(self.width())+"X"+str(self.height()))   
+    '''def someFunction(self):
+        logging.info(str(self.width())+"X"+str(self.height()))   '''
 
     def changeStyle(self, styleName):
         QApplication.setStyle(QStyleFactory.create(styleName))
@@ -285,38 +302,39 @@ class UISettings(QDialog):
         else:
             self.OnPreview()
 
+    def _showImage(self, index, imagelabel):
+        client.TakePicture(index)   
+        imagelabel.setImageScale()     
+        data = client.imageDownload(index).data
+        image = Image.open(io.BytesIO(data))
+        imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+        pixmap = QPixmap.fromImage(imageq)
+        imagelabel.imagepixmap = pixmap
+
+    def _drawtestScrew(self, index, imagelabel, data):
+        ret=True
+        for itemscrew in range(data):
+            if itemscrew[0] < 0.60:
+                print(data[1])
+                ret = False
+                imagelabel.DrawImageResult(itemscrew[1])
+        return ret
+
     def _ThreadTakepicture(self):
         self.takelock.acquire()
         client = ServerProxy("http://localhost:8888", allow_none=True)
         client.profilepath('/home/pi/Desktop/pyUI/profiles', 'aaa')
-        #client.call('Init')
-        #self.tabWidget.setCurrentIndex(0)
-        client.TakePicture(0)   
-        self.imageTop.setImageScale()     
-        data = client.imageDownload(0).data
-        image = Image.open(io.BytesIO(data))
-        imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        pixmap = QPixmap.fromImage(imageq)
-        self.imageTop.imagepixmap = pixmap
+        
+        self._showImage(0, self.imageTop)
 
-        #self.tabWidget.setCurrentIndex(1)
-        client.TakePicture(1)
-        self.imageLeft.setImageScale()
-        data = client.imageDownload(1).data
-        image = Image.open(io.BytesIO(data))
-        imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        pixmap = QPixmap.fromImage(imageq)
-        self.imageLeft.imagepixmap = pixmap
+        self._showImage(1, self.imageLeft)
 
-        #self.tabWidget.setCurrentIndex(2)
-        client.TakePicture(2)
-        self.imageRight.setImageScale()
-        data = client.imageDownload(2).data
-        image = Image.open(io.BytesIO(data))
-        imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        pixmap = QPixmap.fromImage(imageq)
-        self.imageRight.imagepixmap = pixmap
-        self.tabWidget.setCurrentIndex(0)
+        self._showImage(2, self.imageRight)
+
+        self._drawtestScrew(index, self.imageTop, client.ResultTest(0))
+        self._drawtestScrew(index, self.imageLeft, client.ResultTest(1))
+        self._drawtestScrew(index, self.imageRight, client.ResultTest(2))
+
         self.takelock.release()
 
 
@@ -326,8 +344,6 @@ class UISettings(QDialog):
             error_dialog = QtWidgets.QErrorMessage(self)
             error_dialog.showMessage('Oh no! Profile name is empty.') 
             return             
-
-        
 
         threading.Thread(target=self._ThreadTakepicture).start()
         #self.createprofiledirstruct(self.leProfile.text())

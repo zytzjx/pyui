@@ -37,7 +37,7 @@ class FDProtocol(serial.threaded.LineReader):
         self.alive = False
         self.events.put(None)
         #self.responses.put('<exit>')
-
+    
     def _run_event(self):
         """
         Process events in a separate thread so that input thread is not
@@ -45,27 +45,28 @@ class FDProtocol(serial.threaded.LineReader):
         """
         while self.alive:
             try:
-                self.handle_event(self.events.get())
+                #self.handle_event(self.events.get())
+                time.sleep(1)
             except:
                 logging.exception('_run_event')
-
+    
     def handle_line(self, line):
         """
         Handle input from serial port, check for events.
         """
         m = re.search(r'^(.*?):[ ]?(\d+)$', line)
         if m:
-            self.events.put(line)
+            #self.events.put(line)
             #if m.group(1)=="Ambient":
             #    if int(m.group(2))<5:
             #        self.ultraSonic.set()
             #        self.ultraSonicStatus = False
             #        print("Am less 5\n")
             if m.group(1) =="Proximity":
-                if int(m.group(2))<100:
+                if int(m.group(2))<150:
                     self.proximity.set()
                     self.proximityStatus = False
-                    print("Prox less 5\n")
+                    print("Proximity is %s\n" % m.group(2))
                 else:
                     self.proximity.clear()
                     self.proximityStatus = True
@@ -73,7 +74,7 @@ class FDProtocol(serial.threaded.LineReader):
                 if int(m.group(2)) > 500:
                     self.ultraSonic.set()
                     self.ultraSonicStatus = False
-                    print("Dis is Less\n")
+                    print("Distance is %s\n" % m.group(2))
                 else:
                     self.ultraSonic.clear()
                     self.ultraSonicStatus = True

@@ -146,6 +146,25 @@ class ImageLabel(QLabel):
             # Append text at the end of file
             file_object.write(text_to_append)
 
+    def DrawImageResult(self, location, clr = Qt.red):
+        if self._imagepixmap == None:
+            return
+
+        painterInstance = QPainter(self._imagepixmap)
+        # set rectangle color and thickness
+        penRectangle = QPen(clr)
+        penRectangle.setWidth(3)
+
+        # draw rectangle on painter
+        painterInstance.setPen(penRectangle)
+        #painterInstance.drawEllipse(QPoint(x * self.scalex, y*self.scaley),25,25)
+        painterInstance.drawRect(QRect(QPoint(location[0], location[2]),QPoint(location[1], location[3])))
+        #self.ProfilePoint.append(QPoint(x * self.scalex, y*self.scaley))
+
+        # set pixmap onto the label widget
+        self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
+        painterInstance.end()
+
 
     def DrawImage(self, x, y, clr = Qt.red):
         # convert image file into pixmap
