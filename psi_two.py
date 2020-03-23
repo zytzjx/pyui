@@ -145,7 +145,7 @@ class UISettings(QDialog):
         
         p = subprocess.Popen(["matchbox-keyboard", "--xid"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.keyboardID = int(p.stdout.readline())
-        threading.Thread(target=lambda a: print(p.stdout.readline()))
+        threading.Thread(target=lambda : print(p.stdout.readline())).start()
 
 
     def ShowKeyBoard(self):
