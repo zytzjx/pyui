@@ -157,20 +157,20 @@ class UISettings(QDialog):
 
 
     def createprofiledirstruct(self, profiename):
-        if profiename == '':
-            return False
-        
         if os.path.isfile('config.json'):
             with open('config.json') as json_file:
                 self.config = json.load(json_file)
-        '''
+
+        if profiename == '':
+            return False
+        
         pathleft = os.path.join(self.config["profilepath"], profiename, "left")
         pathtop = os.path.join(self.config["profilepath"], profiename, "top")
         pathright = os.path.join(self.config["profilepath"], profiename, "right")
         mode = 0o777
-        os.makedirs(pathleft, mode, True) 
-        os.makedirs(pathtop, mode, True) 
-        os.makedirs(pathright, mode, True) '''
+        #os.makedirs(pathleft, mode, True) 
+        #os.makedirs(pathtop, mode, True) 
+        #os.makedirs(pathright, mode, True) 
 
     def closeEvent(self, event):
         self._shutdown()
@@ -190,9 +190,21 @@ class UISettings(QDialog):
         QApplication.setPalette(QApplication.style().standardPalette())
 
     def updateProfile(self):
-        curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
-        profilepath=os.path.join(curpath,"profiles")
-        self.comboBox.addItems([name for name in os.listdir(profilepath) if os.path.isdir(os.path.join(profilepath, name))])
+        self.createprofiledirstruct("")
+        fpath=self.config["profilepath"]
+        client = ServerProxy("http://localhost:8888", allow_none=True)
+        self.comboBox.addItems(client.updateProfile(fpath))
+        #curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
+        #profilepath=os.path.join(curpath,"profiles")
+        #self.comboBox.addItems([name for name in os.listdir(profilepath) if os.path.isdir(os.path.join(profilepath, name))])
+
+    @staticmethod
+    def createSShServer():
+        from paramiko import SSHClient
+        ssh = SSHClient()
+        ssh.load_system_host_keys()
+        ssh.connect('192.168.1.16', username='pi', password='qa', look_for_keys=False)
+        _, stdout, _ = client.exec_command('python3 ~/Desktop/pyUI/servertask.py &')
 
     '''    
     def PreviewCamera(self):
