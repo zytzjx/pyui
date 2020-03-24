@@ -1,0 +1,1 @@
+/home/pi/Desktop/pyUI/profiles/aaa/right/R0.png, 2298, 2346, 531, 579
