@@ -129,7 +129,7 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             maxScore, maxROI = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
             resultList.append([maxScore, maxROI])
     return resultList
-
+'''
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-folderName", "-profile folder name", type=str, required=True,
@@ -151,3 +151,4 @@ if os.path.exists(inputDeviceFileName) and os.path.exists(inputDeviceImageName) 
 else:
     print("Files are not read in...")
 
+'''

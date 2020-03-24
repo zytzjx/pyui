@@ -149,7 +149,10 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _callyanfunction(self, index):
         print('callyanfunction:' +self.profilename)
-        self.imageresults[index] = testScrew.testScrews(os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".txt"), os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"), "/tmp/ramdisk/phoneimage_%d.jpg" % index)
+        self.imageresults[index] = testScrew.testScrews(
+            os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt"), 
+            os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg"), 
+            "/tmp/ramdisk/phoneimage_%d.jpg" % index)
 
     def _startdetectthread(self, index):
         t1 = threading.Thread(target=self._callyanfunction, args=(index,))

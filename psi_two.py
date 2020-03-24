@@ -17,6 +17,7 @@ from settings import Settings
 import ImageLabel
 import json
 import threading
+from datetime import datetime
 
 from  serialstatus import FDProtocol
 import serial
@@ -120,18 +121,6 @@ class UISettings(QDialog):
         #self.serialThread.start()
 
         self.threadPreview=None
-        #self.on_CameraChange()
-        #self.setWindowOpacity(0.5) 
-        #self.setAttribute(Qt.WA_TranslucentBackground) 
-
-        #self.resize(800, 600) 
-    #def mouseMoveEvent(self, evt: QMouseEvent) -> None:
-    #    logging.info(str(evt.pos().x())+"=="+str(evt.pos().y())) 
-    #    super(UISettings, self).mouseMoveEvent(evt)
-
-    #def mousePressEvent(self, evt: QMouseEvent) -> None:
-    #    logging.info(str(evt.pos().x())+"=>"+str(evt.pos().y())) 
-    #    super(UISettings, self).mousePressEvent(evt)
 
     def StatusChange(self, value):
         self.takelock.acquire()
@@ -165,13 +154,6 @@ class UISettings(QDialog):
             infoWindow2.show()
         except:
             pass
-        #rect = self.geometry()
-        #self.infoWindow2.setGeometry(rect.x()+rect.width(), rect.y()+rect.height(), 400, 300)
-        #self.move(rect.x()+rect.width(), rect.y()+rect.height())
-        #hbox2 = QHBoxLayout()
-        #hbox2.addWidget(embed_widget)
-        #infoWindow2.setLayout(hbox2)
-        #infoWindow2.show()
 
 
     def createprofiledirstruct(self, profiename):
@@ -246,7 +228,7 @@ class UISettings(QDialog):
             self.imageRight.isProfile = False
             self.leProfile.hide()
             self.comboBox.show()
-
+    '''
     def takephotoshow(self, cameraindex, picname, profilename):
         #self.takephoto           
 
@@ -276,7 +258,7 @@ class UISettings(QDialog):
             logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
             self.imageRight.imagepixmap = self.pixmap
             self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
-
+    '''
 
     @pyqtSlot()
     def on_CameraChange(self):
@@ -302,22 +284,31 @@ class UISettings(QDialog):
         else:
             self.OnPreview()
 
-    def _showImage(self, index, imagelabel):
+    def _showImage(self, index, imagelabel, client):
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % index)
         client.TakePicture(index)   
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
         imagelabel.setImageScale()     
         data = client.imageDownload(index).data
+        print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
         image = Image.open(io.BytesIO(data))
         imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
         pixmap = QPixmap.fromImage(imageq)
         imagelabel.imagepixmap = pixmap
 
     def _drawtestScrew(self, index, imagelabel, data):
-        ret=True
+        ret=0
         for itemscrew in range(data):
-            if itemscrew[0] < 0.60:
-                print(data[1])
-                ret = False
-                imagelabel.DrawImageResult(itemscrew[1])
+            if itemscrew[0] < 0.35:
+                ret = 2
+                imagelabel.DrawImageResult(itemscrew[1], Qt.red)               
+            elif itemscrew[0] >= 0.45:
+                imagelabel.DrawImageResult(itemscrew[1], Qt.green)
+            else:
+                if ret != 2:
+                    ret= 1 
+                imagelabel.DrawImageResult(itemscrew[1], Qt.yellow)               
+
         return ret
 
     def _ThreadTakepicture(self):
@@ -325,18 +316,33 @@ class UISettings(QDialog):
         client = ServerProxy("http://localhost:8888", allow_none=True)
         client.profilepath('/home/pi/Desktop/pyUI/profiles', 'aaa')
         
-        self._showImage(0, self.imageTop)
+        self._showImage(0, self.imageTop, client)
 
-        self._showImage(1, self.imageLeft)
+        self._showImage(1, self.imageLeft, client)
 
-        self._showImage(2, self.imageRight)
+        self._showImage(2, self.imageRight, client)
 
-        self._drawtestScrew(index, self.imageTop, client.ResultTest(0))
-        self._drawtestScrew(index, self.imageLeft, client.ResultTest(1))
-        self._drawtestScrew(index, self.imageRight, client.ResultTest(2))
-
+        status=self._drawtestScrew(0, self.imageTop, client.ResultTest(0))        
+        status1=self._drawtestScrew(1, self.imageLeft, client.ResultTest(1))
+        status2=self._drawtestScrew(2, self.imageRight, client.ResultTest(2))
         self.takelock.release()
 
+        status = max([status, status1, status2])
+        if status==0:
+            self.lblStatus.text="success"
+            self.lblStatus.setStyleSheet('''
+            color: green
+            ''')
+        elif status==1:
+            self.lblStatus.text="finish"
+            self.lblStatus.setStyleSheet('''
+            color: yellow
+            ''')
+        else:
+            self.lblStatus.text="Error"
+            self.lblStatus.setStyleSheet('''
+            color: red
+            ''')
 
     @pyqtSlot()
     def on_startclick(self):
@@ -346,13 +352,6 @@ class UISettings(QDialog):
             return             
 
         threading.Thread(target=self._ThreadTakepicture).start()
-        #self.createprofiledirstruct(self.leProfile.text())
-        #self.on_CameraChange()
-        #self.imageTop.setImageScale()
-
-        #self.pixmap = QPixmap('/home/pi/Desktop/pyUI/iphone6s_3_s1.jpg')
-        #logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
-        #self.imageTop.imagepixmap = self.pixmap
         return
 
     def _shutdown(self):
