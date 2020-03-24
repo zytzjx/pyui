@@ -87,3 +87,15 @@ sudo apt install xscreensaver
 
 #pip3 install scp
 pip3 install paramiko
+
+#how to compile matchbox-keyboard
+#https://ozzmaker.com/virtual-keyboard-for-the-raspberry-pi/
+sudo apt-get install libfakekey-dev libpng-dev libxft-dev autoconf libtool -y
+git clone https://github.com/mwilliams03/matchbox-keyboard.git
+cd matchbox-keyboard
+./autogen.sh
+make
+sudo make install
+
+ sudo apt-get install libmatchbox1 -y
+ 

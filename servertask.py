@@ -145,6 +145,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return self._profilepath
 
     def CloseServer(self):
+        self._shutdownpreview()
         server.shutdown()
 
     def _callyanfunction(self, index):

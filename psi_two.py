@@ -84,9 +84,10 @@ class UISettings(QDialog):
         self.pbImageChange.clicked.connect(self.on_click)
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
-        self.updateProfile()
+        #self.updateProfile()
         #self.resized.connect(self.someFunction)
         self.pbSetting.clicked.connect(self.on_settingclick)
+        self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
         self.leProfile.hide()
@@ -95,6 +96,7 @@ class UISettings(QDialog):
         self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
         self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
         self.takelock=threading.Lock()
+        self.startKey =False
         self.setStyleSheet('''
         QPushButton{background-color:rgba(255,178,0,50%);
             color: white;   
@@ -129,29 +131,37 @@ class UISettings(QDialog):
 
     #@staticmethod
     def createKeyboard(self):
-        subprocess.Popen(["killall","matchbox-keyboa"])
-        self.keyboardID = 0
-        
-        p = subprocess.Popen(["matchbox-keyboard", "--xid"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.keyboardID = int(p.stdout.readline())
-        threading.Thread(target=lambda : print(p.stdout.readline())).start()
-
-
-    def ShowKeyBoard(self):
-        try:
-            self.createKeyboard()
-            if self.keyboardID == 0:
-                return
+        #subprocess.Popen(["killall","matchbox-keyboa"])
+        #self.keyboardID = 0
+        if self.keyboardID == 0:
+            p = subprocess.Popen(["matchbox-keyboard", "--xid"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.keyboardID = int(p.stdout.readline())
+            threading.Thread(target=lambda : print(p.stdout.readline())).start()
+            self.startKey = True
             logging.debug("capturing window 0x%x ", self.keyboardID)
             embed_window = QtGui.QWindow.fromWinId(self.keyboardID)
             embed_widget = QtWidgets.QWidget.createWindowContainer(embed_window)
-            infoWindow2 = QDialog(parent=self)
             embed_widget.setMinimumWidth(580)
             embed_widget.setMinimumHeight(280)
             hbox2 = QHBoxLayout()
             hbox2.addWidget(embed_widget)
-            infoWindow2.setLayout(hbox2)
-            infoWindow2.show()
+            self.wdtKeyBoard.setLayout(hbox2)
+
+
+
+    def ShowKeyBoard(self):
+        try:
+            if self.startKey:
+                self.wdtKeyBoard.hide()
+                self.startKey = False
+                return
+
+            self.createKeyboard()
+            if self.keyboardID == 0:
+                return
+            self.wdtKeyBoard.show()
+            self.startKey = True
+            #elf.wdtKeyBoard.resize(580, 280)
         except:
             pass
 
@@ -278,14 +288,18 @@ class UISettings(QDialog):
 
 
     @pyqtSlot()
+    def on_KeyBoardclick(self):
+        self.ShowKeyBoard()
+
+    @pyqtSlot()
     def on_settingclick(self):
-        '''dlg = Settings(self)
+        dlg = Settings(self)
         if dlg.exec_():
             print("Success!")
         else:
-            print("Cancel!")  '''
+            print("Cancel!")  
 
-        self.ShowKeyBoard()      
+        #self.ShowKeyBoard()      
 
     @pyqtSlot()
     def on_click(self):
