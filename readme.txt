@@ -77,8 +77,8 @@ sudo mount -a
 
 sudo apt install xscreensaver
 
-pip install pyserial
-pip3 install pyserial
+#pip install pyserial                 #system has installed
+#pip3 install pyserial
 
 #pip install mprpc
 #pip3 install mprpc
@@ -86,4 +86,4 @@ pip3 install pyserial
 #pip3 install gsocketpool
 
 #pip3 install scp
-#pip3 install paramiko
+pip3 install paramiko
