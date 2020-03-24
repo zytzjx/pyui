@@ -84,7 +84,7 @@ class UISettings(QDialog):
         self.pbImageChange.clicked.connect(self.on_click)
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
-        #self.updateProfile()
+        self.updateProfile()
         #self.resized.connect(self.someFunction)
         self.pbSetting.clicked.connect(self.on_settingclick)
         self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
@@ -216,7 +216,7 @@ class UISettings(QDialog):
         from paramiko import SSHClient
         ssh = SSHClient()
         ssh.load_system_host_keys()
-        ssh.connect('192.168.1.16', username='pi', password='qa', look_for_keys=False)
+        ssh.connect('192.168.1.12', username='pi', password='qa', look_for_keys=False)
         _, stdout, _ = ssh.exec_command('python3 ~/Desktop/pyUI/servertask.py &')
 
     '''    
@@ -341,34 +341,38 @@ class UISettings(QDialog):
         return ret
 
     def _ThreadTakepicture(self):
-        self.takelock.acquire()
         #client = ServerProxy("http://localhost:8888", allow_none=True)
         self.client.profilepath('/home/pi/Desktop/pyUI/profiles', 'aaa')
-        
-        self._showImage(0, self.imageTop, self.client)
+        self.takelock.acquire()
+        status, status1, status2 = 0, 0, 0
+        try:
+            self._showImage(0, self.imageTop, self.client)
 
-        self._showImage(1, self.imageLeft, self.client)
+            self._showImage(1, self.imageLeft, self.client)
 
-        self._showImage(2, self.imageRight, self.client)
+            self._showImage(2, self.imageRight, self.client)
 
-        status=self._drawtestScrew(0, self.imageTop, self.client.ResultTest(0))        
-        status1=self._drawtestScrew(1, self.imageLeft, self.client.ResultTest(1))
-        status2=self._drawtestScrew(2, self.imageRight, self.client.ResultTest(2))
-        self.takelock.release()
+            status=self._drawtestScrew(0, self.imageTop, self.client.ResultTest(0))        
+            status1=self._drawtestScrew(1, self.imageLeft, self.client.ResultTest(1))
+            status2=self._drawtestScrew(2, self.imageRight, self.client.ResultTest(2))
+        except :
+            status = 5
+        finally:
+            self.takelock.release()
 
         status = max([status, status1, status2])
         if status==0:
-            self.lblStatus.text="success"
+            self.lblStatus.setText("success")
             self.lblStatus.setStyleSheet('''
             color: green
             ''')
         elif status==1:
-            self.lblStatus.text="finish"
+            self.lblStatus.setText("finish")
             self.lblStatus.setStyleSheet('''
             color: yellow
             ''')
         else:
-            self.lblStatus.text="Error"
+            self.lblStatus.setText("Error")
             self.lblStatus.setStyleSheet('''
             color: red
             ''')
@@ -428,6 +432,7 @@ class UISettings(QDialog):
  
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    UISettings.createSShServer()
     app = QApplication(sys.argv)
     #listImages('C:/Users/jefferyz/Desktop/pictures/')
     window = UISettings()
