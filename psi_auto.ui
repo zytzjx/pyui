@@ -58,6 +58,17 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pbKeyBoard">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>keyboard.png</normaloff>keyboard.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -269,6 +280,16 @@
              </layout>
             </item>
             <item>
+             <widget class="QWidget" name="wdtKeyBoard" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>5</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="verticalSpacer">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -319,7 +340,7 @@
           <enum>QTabWidget::West</enum>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="tbMain">
           <attribute name="title">
