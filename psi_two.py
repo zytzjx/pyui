@@ -84,9 +84,10 @@ class UISettings(QDialog):
         self.pbImageChange.clicked.connect(self.on_click)
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
-        self.updateProfile()
+        #self.updateProfile()
         #self.resized.connect(self.someFunction)
         self.pbSetting.clicked.connect(self.on_settingclick)
+        self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
         self.leProfile.hide()
@@ -95,6 +96,8 @@ class UISettings(QDialog):
         self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
         self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
         self.takelock=threading.Lock()
+        self.startKey =False
+        self.client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
         self.setStyleSheet('''
         QPushButton{background-color:rgba(255,178,0,50%);
             color: white;   
@@ -129,29 +132,37 @@ class UISettings(QDialog):
 
     #@staticmethod
     def createKeyboard(self):
-        subprocess.Popen(["killall","matchbox-keyboa"])
-        self.keyboardID = 0
-        
-        p = subprocess.Popen(["matchbox-keyboard", "--xid"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.keyboardID = int(p.stdout.readline())
-        threading.Thread(target=lambda : print(p.stdout.readline())).start()
-
-
-    def ShowKeyBoard(self):
-        try:
-            self.createKeyboard()
-            if self.keyboardID == 0:
-                return
+        #subprocess.Popen(["killall","matchbox-keyboa"])
+        #self.keyboardID = 0
+        if self.keyboardID == 0:
+            p = subprocess.Popen(["matchbox-keyboard", "--xid"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.keyboardID = int(p.stdout.readline())
+            threading.Thread(target=lambda : print(p.stdout.readline())).start()
+            self.startKey = True
             logging.debug("capturing window 0x%x ", self.keyboardID)
             embed_window = QtGui.QWindow.fromWinId(self.keyboardID)
             embed_widget = QtWidgets.QWidget.createWindowContainer(embed_window)
-            infoWindow2 = QDialog(parent=self)
             embed_widget.setMinimumWidth(580)
             embed_widget.setMinimumHeight(280)
             hbox2 = QHBoxLayout()
             hbox2.addWidget(embed_widget)
-            infoWindow2.setLayout(hbox2)
-            infoWindow2.show()
+            self.wdtKeyBoard.setLayout(hbox2)
+
+
+
+    def ShowKeyBoard(self):
+        try:
+            if self.startKey:
+                self.wdtKeyBoard.hide()
+                self.startKey = False
+                return
+
+            self.createKeyboard()
+            if self.keyboardID == 0:
+                return
+            self.wdtKeyBoard.show()
+            self.startKey = True
+            #elf.wdtKeyBoard.resize(580, 280)
         except:
             pass
 
@@ -160,6 +171,8 @@ class UISettings(QDialog):
         if os.path.isfile('config.json'):
             with open('config.json') as json_file:
                 self.config = json.load(json_file)
+
+        self.client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
 
         if profiename == '':
             return False
@@ -192,8 +205,8 @@ class UISettings(QDialog):
     def updateProfile(self):
         self.createprofiledirstruct("")
         fpath=self.config["profilepath"]
-        client = ServerProxy("http://localhost:8888", allow_none=True)
-        self.comboBox.addItems(client.updateProfile(fpath))
+        #client = ServerProxy("http://localhost:8888", allow_none=True)
+        self.comboBox.addItems(self.client.updateProfile(fpath))
         #curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
         #profilepath=os.path.join(curpath,"profiles")
         #self.comboBox.addItems([name for name in os.listdir(profilepath) if os.path.isdir(os.path.join(profilepath, name))])
@@ -204,7 +217,7 @@ class UISettings(QDialog):
         ssh = SSHClient()
         ssh.load_system_host_keys()
         ssh.connect('192.168.1.16', username='pi', password='qa', look_for_keys=False)
-        _, stdout, _ = client.exec_command('python3 ~/Desktop/pyUI/servertask.py &')
+        _, stdout, _ = ssh.exec_command('python3 ~/Desktop/pyUI/servertask.py &')
 
     '''    
     def PreviewCamera(self):
@@ -278,14 +291,18 @@ class UISettings(QDialog):
 
 
     @pyqtSlot()
+    def on_KeyBoardclick(self):
+        self.ShowKeyBoard()
+
+    @pyqtSlot()
     def on_settingclick(self):
-        '''dlg = Settings(self)
+        dlg = Settings(self)
         if dlg.exec_():
             print("Success!")
         else:
-            print("Cancel!")  '''
+            print("Cancel!")  
 
-        self.ShowKeyBoard()      
+        #self.ShowKeyBoard()      
 
     @pyqtSlot()
     def on_click(self):
@@ -325,18 +342,18 @@ class UISettings(QDialog):
 
     def _ThreadTakepicture(self):
         self.takelock.acquire()
-        client = ServerProxy("http://localhost:8888", allow_none=True)
-        client.profilepath('/home/pi/Desktop/pyUI/profiles', 'aaa')
+        #client = ServerProxy("http://localhost:8888", allow_none=True)
+        self.client.profilepath('/home/pi/Desktop/pyUI/profiles', 'aaa')
         
-        self._showImage(0, self.imageTop, client)
+        self._showImage(0, self.imageTop, self.client)
 
-        self._showImage(1, self.imageLeft, client)
+        self._showImage(1, self.imageLeft, self.client)
 
-        self._showImage(2, self.imageRight, client)
+        self._showImage(2, self.imageRight, self.client)
 
-        status=self._drawtestScrew(0, self.imageTop, client.ResultTest(0))        
-        status1=self._drawtestScrew(1, self.imageLeft, client.ResultTest(1))
-        status2=self._drawtestScrew(2, self.imageRight, client.ResultTest(2))
+        status=self._drawtestScrew(0, self.imageTop, self.client.ResultTest(0))        
+        status1=self._drawtestScrew(1, self.imageLeft, self.client.ResultTest(1))
+        status2=self._drawtestScrew(2, self.imageRight, self.client.ResultTest(2))
         self.takelock.release()
 
         status = max([status, status1, status2])
@@ -367,22 +384,22 @@ class UISettings(QDialog):
         return
 
     def _shutdown(self):
-        client = ServerProxy("http://localhost:8888", allow_none=True)
-        client.CloseServer()
+        #client = ServerProxy("http://localhost:8888", allow_none=True)
+        self.client.CloseServer()
 
 
     def _GetImageShow(self):
         #from PIL import Image
         #import urllib.request
 
-        client = ServerProxy("http://localhost:8888", allow_none=True)
+        #client = ServerProxy("http://localhost:8888", allow_none=True)
         #url = 'http://127.0.0.1:5000/startpause'
         #urllib.request.urlopen(url)
-        logging.info(client.startpause())
+        logging.info(self.client.startpause())
         time.sleep(0.1)
         while True:
             #url = 'http://127.0.0.1:5000/preview'
-            data = client.preview().data
+            data = self.client.preview().data
             image = Image.open(io.BytesIO(data))
             imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
             pixmap = QPixmap.fromImage(imageq)
@@ -391,7 +408,7 @@ class UISettings(QDialog):
                 self.previewEvent.clear()
                 #url = 'http://127.0.0.1:5000/startpause'
                 #urllib.request.urlopen(url)
-                client.startpause()
+                self.client.startpause()
                 break
 
     def ChangeTab(self):
