@@ -214,10 +214,27 @@ class UISettings(QDialog):
     @staticmethod
     def createSShServer():
         from paramiko import SSHClient
+        import paramiko
         ssh = SSHClient()
+        #ssh.set_missing_host_key_policy(AutoAddPolicy())
         ssh.load_system_host_keys()
-        ssh.connect('192.168.1.12', username='pi', password='qa', look_for_keys=False)
-        _, stdout, _ = ssh.exec_command('python3 ~/Desktop/pyUI/servertask.py &')
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(hostname='192.168.1.12', username='pi', password='qa', look_for_keys=False)
+
+        stdin, stdout, stderr = ssh.exec_command('DISPLAY=:0.0 python3 ~/Desktop/pyUI/servertask.py')
+        bErrOut = True
+        
+        for line in stdout.read().splitlines():
+            bErrOut = False
+            break
+
+        if bErrOut:
+            for line in stderr.read().splitlines():
+                print(line)
+                break
+        
+        ssh.close()
+
 
     '''    
     def PreviewCamera(self):
@@ -389,7 +406,10 @@ class UISettings(QDialog):
 
     def _shutdown(self):
         #client = ServerProxy("http://localhost:8888", allow_none=True)
-        self.client.CloseServer()
+        try:
+            self.client.CloseServer()
+        except :
+            pass
 
 
     def _GetImageShow(self):
@@ -431,12 +451,10 @@ class UISettings(QDialog):
             self.threadPreview.start()
  
 if __name__ == "__main__":
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    UISettings.createSShServer()
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)   
     app = QApplication(sys.argv)
-    #listImages('C:/Users/jefferyz/Desktop/pictures/')
     window = UISettings()
- 
+    
     window.show()
     window.showFullScreen()
 
