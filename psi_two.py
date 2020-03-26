@@ -25,6 +25,8 @@ from xmlrpc.client import ServerProxy
 import xmlrpc.client
 
 import subprocess
+import numpy as np
+
 
 files = []
 
@@ -90,12 +92,14 @@ class UISettings(QDialog):
         self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
+        self.comboBox.currentTextChanged.connect(self.OnChangeItem)
         self.leProfile.hide()
         self.previewEvent = threading.Event()
         self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
         self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
         self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
         self.takelock=threading.Lock()
+        self.takepic=threading.Event()
         self.startKey =False
         self.client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
         self.setStyleSheet('''
@@ -167,6 +171,16 @@ class UISettings(QDialog):
             pass
 
 
+    def OnChangeItem(self, value):
+        index = self.comboBox.currentIndex()
+        if(index>=0):
+            self.config['comboxindex'] = index
+        self._saveConfigFile()
+
+    def _saveConfigFile(self):
+        with open('config.json', 'w') as json_file:
+            json.dump(self.config, json_file, indent=4)
+
     def createprofiledirstruct(self, profiename):
         if os.path.isfile('config.json'):
             with open('config.json') as json_file:
@@ -207,6 +221,7 @@ class UISettings(QDialog):
         fpath=self.config["profilepath"]
         #client = ServerProxy("http://localhost:8888", allow_none=True)
         self.comboBox.addItems(self.client.updateProfile(fpath))
+        self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config else 0)
         #curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
         #profilepath=os.path.join(curpath,"profiles")
         #self.comboBox.addItems([name for name in os.listdir(profilepath) if os.path.isdir(os.path.join(profilepath, name))])
@@ -330,22 +345,25 @@ class UISettings(QDialog):
         else:
             self.OnPreview()
 
-    def _showImage(self, index, imagelabel, client):
+    def _showImage(self, index, imagelabel):
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % index)
-        client.TakePicture(index)   
+        self.client.TakePicture(index, not self.checkBox.isChecked())   
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
         imagelabel.setImageScale()     
-        data = client.imageDownload(index).data
+        data = self.client.imageDownload(index).data
         print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
         image = Image.open(io.BytesIO(data))
-        imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        pixmap = QPixmap.fromImage(imageq)
-        imagelabel.imagepixmap = pixmap
+        image.save("/tmp/ramdisk/temp_%d.jpg" % index)
+        #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+        #pixmap = QPixmap.fromImage(imageq)
+        imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
+        imagelabel.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
+
 
     def _drawtestScrew(self, index, imagelabel, data):
         ret=0
-        for itemscrew in range(data):
-            if itemscrew[0] < 0.35:
+        for itemscrew in data:
+            if itemscrew[0] == np.nan or itemscrew[0] < 0.35:
                 ret = 2
                 imagelabel.DrawImageResult(itemscrew[1], Qt.red)               
             elif itemscrew[0] >= 0.45:
@@ -359,40 +377,37 @@ class UISettings(QDialog):
 
     def _ThreadTakepicture(self):
         #client = ServerProxy("http://localhost:8888", allow_none=True)
-        self.client.profilepath('/home/pi/Desktop/pyUI/profiles', 'aaa')
+        self.client.profilepath(self.config["profilepath"], self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText())
         self.takelock.acquire()
         status, status1, status2 = 0, 0, 0
+        self.takepic.clear()
         try:
-            self._showImage(0, self.imageTop, self.client)
+            self._showImage(0, self.imageTop)
+            self._showImage(1, self.imageLeft)
+            self._showImage(2, self.imageRight)
 
-            self._showImage(1, self.imageLeft, self.client)
-
-            self._showImage(2, self.imageRight, self.client)
-
-            status=self._drawtestScrew(0, self.imageTop, self.client.ResultTest(0))        
-            status1=self._drawtestScrew(1, self.imageLeft, self.client.ResultTest(1))
-            status2=self._drawtestScrew(2, self.imageRight, self.client.ResultTest(2))
-        except :
+            #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))        
+            #status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
+            #status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
+        except Exception as ex:
+            print(str(ex))
             status = 5
         finally:
             self.takelock.release()
 
+        self.takepic.set()
+        '''
         status = max([status, status1, status2])
         if status==0:
             self.lblStatus.setText("success")
-            self.lblStatus.setStyleSheet('''
-            color: green
-            ''')
+            self.lblStatus.setStyleSheet('color: green')
         elif status==1:
             self.lblStatus.setText("finish")
-            self.lblStatus.setStyleSheet('''
-            color: yellow
-            ''')
+            self.lblStatus.setStyleSheet('color: yellow')
         else:
             self.lblStatus.setText("Error")
-            self.lblStatus.setStyleSheet('''
-            color: red
-            ''')
+            self.lblStatus.setStyleSheet('color: red')
+        '''
 
     @pyqtSlot()
     def on_startclick(self):
@@ -401,7 +416,52 @@ class UISettings(QDialog):
             error_dialog.showMessage('Oh no! Profile name is empty.') 
             return             
 
+        '''
+        self.client.profilepath(self.config["profilepath"], self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText())
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % 0)
+        self.client.TakePicture(0, self.checkBox.isChecked())   
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % 0)
+        self.imageTop.setImageScale()     
+        data = self.client.imageDownload(0).data
+        print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % 0)
+        image = Image.open(io.BytesIO(data))
+        image.save("/tmp/ramdisk/aaa.jpg")
+        #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+        #pixmap = QPixmap.fromImage(imageq)
+        #self.imageTop.setServerProxy(self.client)
+        self.imageTop.imagepixmap = QPixmap("/tmp/ramdisk/aaa.jpg")#pixmap
+        self.imageTop.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
+        '''
+
         threading.Thread(target=self._ThreadTakepicture).start()
+        if not self.checkBox.isChecked():
+            status, status1, status2 = 0, 0, 0
+            self.takepic.wait()
+            #time.sleep(1)
+            try:
+                status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))        
+                status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
+                status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
+            except :
+                status = 5
+
+            status = max([status, status1, status2])
+            if status==0:
+                self.lblStatus.setText("success")
+                self.lblStatus.setStyleSheet('''
+                color: green
+                ''')
+            elif status==1:
+                self.lblStatus.setText("finish")
+                self.lblStatus.setStyleSheet('''
+                color: yellow
+                ''')
+            else:
+                self.lblStatus.setText("Error")
+                self.lblStatus.setStyleSheet('''
+                color: red
+                ''')
+
         return
 
     def _shutdown(self):

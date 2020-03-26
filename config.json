@@ -1,1 +1,6 @@
-{"cw": 3280, "ch": 2464, "profilepath": "/home/pi/Desktop/pyUI/profiles"}
+{
+    "cw": 3280,
+    "ch": 2464,
+    "profilepath": "/home/pi/Desktop/pyUI/profiles",
+    "comboxindex": 2
+}

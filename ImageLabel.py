@@ -6,10 +6,11 @@ import profiledata
 import os
 import sys
 import enum
+from xmlrpc.client import ServerProxy
 
 class CAMERA(enum.Enum):
-   LEFT = 0
-   TOP = 1
+   LEFT = 1
+   TOP = 0
    RIGHT = 2
 
 class ImageLabel(QLabel):
@@ -35,6 +36,8 @@ class ImageLabel(QLabel):
         self.profile=profiledata.profile("","")
         self._indexscrew=0
         self.profilerootpath=os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])),"profiles")
+        self._client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
+
 
     def fileprechar(self, argument):
         switcher = {
@@ -43,6 +46,9 @@ class ImageLabel(QLabel):
             CAMERA.RIGHT: "R",
         }
         return switcher.get(argument, "Invalid")
+
+    def setServerProxy(self, value):
+        self._client = value
 
     # get profile directory sub directory
     def DirSub(self, argument):
@@ -173,23 +179,27 @@ class ImageLabel(QLabel):
         if self._imagepixmap == None or not self._isProfile:
             return
         # create painter instance with pixmap
-        painterInstance = QPainter(self._imagepixmap)
+        logging.info("source image:"+str(self._imagepixmap.width())+"=>"+str(self._imagepixmap.height())) 
+        try:
+            painterInstance = QPainter(self._imagepixmap)
 
-        # set rectangle color and thickness
-        penRectangle = QPen(clr)
-        penRectangle.setWidth(3)
+            # set rectangle color and thickness
+            penRectangle = QPen(clr)
+            penRectangle.setWidth(3)
 
-        # draw rectangle on painter
-        painterInstance.setPen(penRectangle)
-        painterInstance.drawEllipse(QPoint(x * self.scalex, y*self.scaley),25,25)
-        #self.ProfilePoint.append(QPoint(x * self.scalex, y*self.scaley))
+            # draw rectangle on painter
+            painterInstance.setPen(penRectangle)
+            painterInstance.drawEllipse(QPoint(x * self.scalex, y*self.scaley),25,25)
+            #self.ProfilePoint.append(QPoint(x * self.scalex, y*self.scaley))
 
-        # set pixmap onto the label widget
-        self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
-        painterInstance.end()
-        self._savescrew(QPoint(x * self.scalex, y*self.scaley))
-
-
+            # set pixmap onto the label widget
+            self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
+            painterInstance.end()
+        except Exception as ex:
+            print(str(ex))
+            pass
+        #self._savescrew(QPoint(x * self.scalex, y*self.scaley))
+        self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
 
     def mousePressEvent(self, evt):
         logging.info("mousepress:"+str(evt.pos().x())+"=>"+str(evt.pos().y())) 

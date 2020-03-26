@@ -5,8 +5,8 @@ from PIL import Image
 
 
 if __name__ == '__main__':
-    client = ServerProxy("http://localhost:8888", allow_none=True)
-    data = client.imageDownload(0).data
+    client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
+    #data = client.imageDownload(0).data
     #io.BytesIO(data)
     print(client.add(1, 2))
     print(client.updateProfile(""))
