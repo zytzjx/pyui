@@ -4,6 +4,7 @@ from skimage.measure import compare_ssim
 import numpy as np
 import argparse
 import os.path
+import logging
 
 
 
@@ -101,6 +102,9 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
     return maxScore, maxROI
 
 def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
+    logging.info("arg0"+inputDeviceFileName)
+    logging.info("arg1"+inputDeviceImageName)
+    logging.info("arg2"+inputImageName)
     # current image
     bigImage = cv2.imread(inputImageName)
     # template image
