@@ -175,7 +175,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def _startdetectthread(self, index):
         t1 = threading.Thread(target=self._callyanfunction, args=(index,))
         t1.start()
-        append(self.yanthreads, t1)
+        self.yanthreads.append(t1)
 
     def _fileprechar(self, argument):
         switcher = {
