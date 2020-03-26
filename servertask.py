@@ -23,6 +23,8 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEven
 import profiledata
 import testScrew
 
+import json
+
 
 class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
     pass
@@ -49,6 +51,8 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self.save_image_event = threading.Event()
         self.save_complete_event = threading.Event()
         self.image_ready = io.BytesIO()
+        self.lockyan=threading.Lock()
+        self.yanthreads=[]
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def _setactivecamera(self, index=0):
@@ -150,14 +154,28 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _callyanfunction(self, index):
         print('callyanfunction:' +self.profilename)
-        self.imageresults[index] = testScrew.testScrews(
-            os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt"), 
-            os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg"), 
-            "/tmp/ramdisk/phoneimage_%d.jpg" % index)
+        txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
+        smplfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg")
+        logging.info(txtfilename)
+        logging.info(smplfilename)
+        if os.path.exists(txtfilename) and os.path.exists(smplfilename):
+            self.lockyan.acquire()
+            try:
+                dataresult = testScrew.testScrews(
+                    txtfilename, 
+                    smplfilename, 
+                    "/tmp/ramdisk/phoneimage_%d.jpg" % index)
+                self.imageresults[index] = dataresult
+            except :
+                self.imageresults[index] = []
+                pass
+            self.lockyan.release()
+            print(self.imageresults[index])
 
     def _startdetectthread(self, index):
         t1 = threading.Thread(target=self._callyanfunction, args=(index,))
         t1.start()
+        append(self.yanthreads, t1)
 
     def _fileprechar(self, argument):
         switcher = {
@@ -271,7 +289,6 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         os.system(cmd)
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
-        #return QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % cam)
         else:
             self._startdetectthread(cam)
 
@@ -300,11 +317,18 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             gp.output(12, False)
         return self.capture(index, IsDetect)
 
-    def ResultTest(self, index):       
-        if index>2:
-            return []
-        else:
-            self.imageresults[index]
+    def ResultTest(self, index):  
+        for st in self.yanthreads:
+            if st.isAlive():
+                st.join()
+
+        self.yanthreads=[]
+        data=[]     
+        if index<3:
+            data = self.imageresults[index]
+        ss = json.dumps(data)
+        print(ss)
+        return ss
 
     def _StartDaemon(self):
         t = threading.Thread(target=self._preview, daemon=True)

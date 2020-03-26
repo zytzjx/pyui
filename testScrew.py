@@ -132,19 +132,23 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             imageTemplate = cv2.cvtColor(imageTemplate, cv2.COLOR_BGR2GRAY)
             maxScore, maxROI = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
             resultList.append([maxScore, maxROI])
+    #print(resultList)
     return resultList
+
 '''
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-folderName", "-profile folder name", type=str, required=True,
+ap.add_argument("-folderName", "-profile folder name", type=str, required=False,
 	help="folder name for screw profile")
-ap.add_argument("-testImageName", "-test image name", type=str, required=True,
+ap.add_argument("-testImageName", "-test image name", type=str, required=False,
 	help="test image name")
 args = vars(ap.parse_args())
+args["folderName"]="iphone6s_top_1"
+args["testImageName"]="/tmp/ramdisk/phoneimage_0.jpg"
 
 # for testing the 'testScrews' function...
-inputDeviceFileName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.txt'
-inputDeviceImageName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.jpg'
+inputDeviceFileName = 'profiles' + '/' + args["folderName"] + '/top/' + args["folderName"] + '.txt'
+inputDeviceImageName = 'profiles' + '/' + args["folderName"] + '/top/' + args["folderName"] + '.jpg'
 inputImageName = args["testImageName"]
 #print(inputDeviceImageName)
 #print(inputImageName)
