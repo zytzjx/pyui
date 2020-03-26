@@ -7,7 +7,6 @@ import os.path
 import logging
 
 
-
 def structural_sim(img_a, img_b):
   '''
   Measure the structural similarity between two images
@@ -78,14 +77,14 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
         rows, cols = bigImage.shape
         trans_range = 10
         # Translation
-        tr_x = int(trans_range * np.random.uniform() - trans_range / 2)
-        tr_y = int(trans_range * np.random.uniform() - trans_range / 2)
+        tr_x = trans_range * np.random.uniform() - trans_range / 2
+        tr_y = trans_range * np.random.uniform() - trans_range / 2
         ##Trans_M = np.float([[1, 0, tr_x], [0, 1, tr_y]])
         ##bigImg = cv2.warpAffine(bigImage, Trans_M, (cols, rows))
-        new_roi_0 = roi_0 + tr_x
-        new_roi_1 = roi_1 + tr_x
-        new_roi_2 = roi_2 + tr_y
-        new_roi_3 = roi_3 + tr_y
+        new_roi_0 = int(roi_0 + tr_x)
+        new_roi_1 = int(roi_1 + tr_x)
+        new_roi_2 = int(roi_2 + tr_y)
+        new_roi_3 = int(roi_3 + tr_y)
         if (new_roi_0 > 0 and new_roi_1 < cols and new_roi_2 >0 and new_roi_3 < rows):
             img = bigImage[new_roi_0: new_roi_1, new_roi_2: new_roi_3]
         else:
@@ -93,8 +92,14 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
         # Cross correlation coefficient
         A = np.array(imageTemplate)
         B = np.array(img)
-        corrcoefScore[i] = np.corrcoef(A.ravel(), B.ravel())[0][1]
-        roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
+        if A.shape is B.shape and np.std(A.ravel()) > 0.0000000001 and np.std(B.ravel()) > 0.0000000001:
+            corrcoefScore[i] = np.corrcoef(A.ravel(), B.ravel())[0][1]
+            roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
+        else:
+            print('Size of test screw does not match size of profile...')
+            print('Or std of A or B is 0')
+            corrcoefScore[i] = 0
+            roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
     maxScore = max(corrcoefScore)
     maxPos = np.argmax(corrcoefScore)
     maxROI = roiList[maxPos]
@@ -102,9 +107,9 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
     return maxScore, maxROI
 
 def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
-    logging.info("arg0"+inputDeviceFileName)
-    logging.info("arg1"+inputDeviceImageName)
-    logging.info("arg2"+inputImageName)
+    logging.info("arg0 "+inputDeviceFileName)
+    logging.info("arg1 "+inputDeviceImageName)
+    logging.info("arg2 "+inputImageName)
     # current image
     bigImage = cv2.imread(inputImageName)
     # template image
@@ -132,23 +137,20 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             imageTemplate = cv2.cvtColor(imageTemplate, cv2.COLOR_BGR2GRAY)
             maxScore, maxROI = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
             resultList.append([maxScore, maxROI])
-    #print(resultList)
     return resultList
 
 '''
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-folderName", "-profile folder name", type=str, required=False,
+ap.add_argument("-folderName", "-profile folder name", type=str, required=True,
 	help="folder name for screw profile")
-ap.add_argument("-testImageName", "-test image name", type=str, required=False,
+ap.add_argument("-testImageName", "-test image name", type=str, required=True,
 	help="test image name")
 args = vars(ap.parse_args())
-args["folderName"]="iphone6s_top_1"
-args["testImageName"]="/tmp/ramdisk/phoneimage_0.jpg"
 
 # for testing the 'testScrews' function...
-inputDeviceFileName = 'profiles' + '/' + args["folderName"] + '/top/' + args["folderName"] + '.txt'
-inputDeviceImageName = 'profiles' + '/' + args["folderName"] + '/top/' + args["folderName"] + '.jpg'
+inputDeviceFileName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.txt'
+inputDeviceImageName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.jpg'
 inputImageName = args["testImageName"]
 #print(inputDeviceImageName)
 #print(inputImageName)
@@ -158,5 +160,4 @@ if os.path.exists(inputDeviceFileName) and os.path.exists(inputDeviceImageName) 
     print(result)
 else:
     print("Files are not read in...")
-
 '''
