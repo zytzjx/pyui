@@ -97,5 +97,14 @@ cd matchbox-keyboard
 make
 sudo make install
 
- sudo apt-get install libmatchbox1 -y
+ #sudo apt-get install libmatchbox1 -y
  
+rsync -avzP --delete pi@192.168.1.12:/home/pi/Desktop/pyUI/profiles /home/pi/Desktop/pyui/profiles/
+
+#no password login ssh settings and rsync
+ssh-keygen
+#all response enter [Press enter key]
+ssh-copy-id -i ~/.ssh/id_rsa.pub remote-host
+ssh remote-host
+
+
