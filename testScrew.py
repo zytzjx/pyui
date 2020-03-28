@@ -1,10 +1,14 @@
 
+#!/usr/bin/python3
 import cv2
 from skimage.measure import compare_ssim
 import numpy as np
 import argparse
 import os.path
 import logging
+import json
+from datetime import datetime
+import sys
 
 
 def structural_sim(img_a, img_b):
@@ -51,29 +55,32 @@ def globalAlignment(img1_color, img2_color):
     matches = matches[:int(len(matches) * 30)]
     no_of_matches = len(matches)
 
-    # Define empty matrices of shape no_of_matches * 2.
-    p1 = np.zeros((no_of_matches, 2))
-    p2 = np.zeros((no_of_matches, 2))
+    if no_of_matches > 10:
+        # Define empty matrices of shape no_of_matches * 2.
+        p1 = np.zeros((no_of_matches, 2))
+        p2 = np.zeros((no_of_matches, 2))
 
-    for i in range(len(matches)):
-        p1[i, :] = kp1[matches[i].queryIdx].pt
-        p2[i, :] = kp2[matches[i].trainIdx].pt
+        for i in range(len(matches)):
+            p1[i, :] = kp1[matches[i].queryIdx].pt
+            p2[i, :] = kp2[matches[i].trainIdx].pt
 
-    # Find the homography matrix.
-    homography, mask = cv2.findHomography(p1, p2, cv2.RANSAC)
+        # Find the homography matrix.
+        homography, mask = cv2.findHomography(p1, p2, cv2.RANSAC)
 
-    # Use this matrix to transform the
-    # colored image wrt the reference image.
-    transformed_img = cv2.warpPerspective(img1_color,
-                                          homography, (width, height))
+        # Use this matrix to transform the
+        # colored image wrt the reference image.
+        transformed_img = cv2.warpPerspective(img1_color,
+                                            homography, (width, height))
+    else:
+        transformed_img = img1_color
     #cv2.imwrite('test_transformed.jpg', transformed_img)
     return transformed_img
 
 def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
 
-    corrcoefScore = np.zeros(60)
+    corrcoefScore = np.zeros(40)
     roiList = []
-    for i in range(60):
+    for i in range(40):
         rows, cols = bigImage.shape
         trans_range = 10
         # Translation
@@ -107,6 +114,7 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
     return maxScore, maxROI
 
 def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
+    logging.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews++")
     logging.info("arg0 "+inputDeviceFileName)
     logging.info("arg1 "+inputDeviceImageName)
     logging.info("arg2 "+inputImageName)
@@ -115,8 +123,8 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
     # template image
     templateImage = cv2.imread(inputDeviceImageName)
     # global alignment
-    transformed_img = globalAlignment(bigImage, templateImage)
-    # transformed_img = bigImage
+    ###transformed_img = globalAlignment(bigImage, templateImage)
+    transformed_img = bigImage
     # convert to gray images
     imageTemplateGray = cv2.cvtColor(templateImage, cv2.COLOR_BGR2GRAY)  # cv2.COLOR_BGR2GRAY
     imgGray = cv2.cvtColor(transformed_img, cv2.COLOR_BGR2GRAY)  # cv2.COLOR_BGR2GRAY
@@ -137,27 +145,49 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             imageTemplate = cv2.cvtColor(imageTemplate, cv2.COLOR_BGR2GRAY)
             maxScore, maxROI = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
             resultList.append([maxScore, maxROI])
+    logging.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews--")
     return resultList
 
-'''
+
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-folderName", "-profile folder name", type=str, required=True,
-	help="folder name for screw profile")
+#ap.add_argument("-folderName", "-profile folder name", type=str, required=True,
+#	help="folder name for screw profile")
+
+ap.add_argument("-txtfilename", "-text file name", type=str, required=True,
+	help="screw profile txt file name")
+ap.add_argument("-jpgfilename", "-jpg file name", type=str, required=True,
+	help="screw profile jpg file name")
 ap.add_argument("-testImageName", "-test image name", type=str, required=True,
 	help="test image name")
+ap.add_argument("-result", "-result file.", type=str, required=False, 
+    help="out put result file")
 args = vars(ap.parse_args())
 
 # for testing the 'testScrews' function...
-inputDeviceFileName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.txt'
-inputDeviceImageName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.jpg'
+#inputDeviceFileName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.txt'
+#inputDeviceImageName = 'PSI' + '/' + args["folderName"] + '/' + args["folderName"] + '.jpg'
+inputDeviceFileName = args["txtfilename"]
+inputDeviceImageName = args["jpgfilename"]
 inputImageName = args["testImageName"]
+resultName=args["result"]
 #print(inputDeviceImageName)
 #print(inputImageName)
+        
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 if os.path.exists(inputDeviceFileName) and os.path.exists(inputDeviceImageName) and os.path.exists(inputImageName):
+    logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews++")
     result = testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName)
+    logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews--")
     print(result)
+    if resultName is not None and resultName !="":
+        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews save++")
+        with open(resultName, 'w') as outfile:
+            json.dump(result, outfile)
+        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews save--")
+    
+    logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews end--")
 else:
     print("Files are not read in...")
-'''
+

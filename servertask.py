@@ -54,6 +54,11 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self.lockyan=threading.Lock()
         self.yanthreads=[]
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self._config={}
+
+    def setConfig(self, sconfig):
+        if not (sconfig is None or sconfig==""):
+            self._config=json.loads(sconfig)
 
     def _setactivecamera(self, index=0):
         if index==0:
@@ -160,15 +165,38 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         logging.info(smplfilename)
         if os.path.exists(txtfilename) and os.path.exists(smplfilename):
             self.lockyan.acquire()
+            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   *testScrews**")
             try:
+                '''
+                import subprocess
+                resultjon = "/tmp/ramdisk/result_%d.json" % index
+                cmdline=' python3 testScrew.py -txtfilename "{0}" -jpgfilename "{1}" -testImageName {2} -result {3}'.format(
+                    txtfilename, smplfilename, "/tmp/ramdisk/phoneimage_%d.jpg" % index, resultjon
+                )
+                logging.info(cmdline)
+                #os.system(cmdline)
+                subprocess.call(["python3", "testScrew.py", '-txtfilename', txtfilename, '-jpgfilename', smplfilename, '-testImageName', "/tmp/ramdisk/phoneimage_%d.jpg" % index, '-result', resultjon])
+                logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   -testScrews--")
+
+                '''
                 dataresult = testScrew.testScrews(
                     txtfilename, 
                     smplfilename, 
                     "/tmp/ramdisk/phoneimage_%d.jpg" % index)
                 self.imageresults[index] = dataresult
+                '''
+                if os.path.exists(resultjon):
+                    with open(resultjon) as json_file:
+                        dataresult = json.load(json_file)                    
+                        self.imageresults[index] = dataresult
+                else:
+                    self.imageresults[index] = []
+                '''
             except :
                 self.imageresults[index] = []
                 pass
+            
+            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   -testScrews end--")
             self.lockyan.release()
             print(self.imageresults[index])
 
@@ -272,8 +300,24 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         }
         return switcher.get(argument, "Invalid")
 
-    def imageDownload(self, cam):
-        cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam
+    def _ChangeImageSize(self, index, scale_percent=25):
+        import cv2
+        cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % index
+        img = cv2.imread(cmd, cv2.IMREAD_UNCHANGED) 
+        print('Original Dimensions : ',img.shape) 
+        #scale_percent = 220 # percent of original size
+        width = int(img.shape[1] * scale_percent / 100)
+        height = int(img.shape[0] * scale_percent / 100)
+        dim = (width, height)
+        # resize image
+        resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+        filename = "/tmp/ramdisk/compressimage_%d.jpg" % index
+        cv2.imwrite(filename, img, [cv2.IMWRITE_JPEG_QUALITY, 30]) 
+        return filename
+        
+
+    def imageDownload(self, cam, IsDetect=True):
+        #cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam
         '''
         image = Image.open(cmd)
         imagenew = image.resize((image.width/4, image.height/4))
@@ -281,6 +325,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         byte_io = BytesIO()
         imagenew.save(byte_io, 'JPEG')
         '''
+        cmd = self._ChangeImageSize(cam)
         handle = open(cmd, 'rb')
         return xmlrpc.client.Binary(handle.read())
 
