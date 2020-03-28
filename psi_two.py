@@ -395,6 +395,7 @@ class UISettings(QDialog):
         finally:
             self.takelock.release()
 
+        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera and transfer")
         self.takepic.set()
         '''
         status = max([status, status1, status2])
@@ -437,6 +438,7 @@ class UISettings(QDialog):
         if not self.checkBox.isChecked():
             status, status1, status2 = 0, 0, 0
             self.takepic.wait()
+            self.takepic.clear()
             #time.sleep(1)
             try:
                 status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))        
