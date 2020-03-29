@@ -7,6 +7,8 @@ import os
 import sys
 import enum
 from xmlrpc.client import ServerProxy
+import numpy as np
+
 
 class CAMERA(enum.Enum):
    LEFT = 1
@@ -151,6 +153,35 @@ class ImageLabel(QLabel):
                 file_object.write("\n")
             # Append text at the end of file
             file_object.write(text_to_append)
+
+    def DrawImageResults(self, data):
+        ret=0
+        if self._imagepixmap == None:
+            return ret
+
+        painterInstance = QPainter(self._imagepixmap)
+        penRectangle = QPen(Qt.red)
+        penRectangle.setWidth(3)
+        painterInstance.setPen(penRectangle)
+
+        for itemscrew in data:
+            location = itemscrew[1]
+            if itemscrew[0] == np.nan or itemscrew[0] < 0.35:
+                ret = 2
+                penRectangle.setColor(Qt.red)
+            elif itemscrew[0] >= 0.45:
+                penRectangle.setColor(Qt.green)
+            else:
+                if ret != 2:
+                    ret= 1 
+                penRectangle.setColor(Qt.yellow)
+
+            painterInstance.drawRect(QRect(QPoint(location[0], location[2]),QPoint(location[1], location[3])))
+
+        self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
+        painterInstance.end()
+
+        return ret
 
     def DrawImageResult(self, location, clr = Qt.red):
         if self._imagepixmap == None:

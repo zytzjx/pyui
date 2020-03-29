@@ -350,18 +350,19 @@ class UISettings(QDialog):
         self.client.TakePicture(index, not self.checkBox.isChecked())   
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
         imagelabel.setImageScale()     
-        data = self.client.imageDownload(index).data
+        '''data = self.client.imageDownload(index).data
         print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
         image = Image.open(io.BytesIO(data))
         image.save("/tmp/ramdisk/temp_%d.jpg" % index)
         #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        #pixmap = QPixmap.fromImage(imageq)
+        #pixmap = QPixmap.fromImage(imageq)'''
         imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
         imagelabel.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
 
 
     def _drawtestScrew(self, index, imagelabel, data):
         ret=0
+        '''
         for itemscrew in data:
             if itemscrew[0] == np.nan or itemscrew[0] < 0.35:
                 ret = 2
@@ -372,7 +373,8 @@ class UISettings(QDialog):
                 if ret != 2:
                     ret= 1 
                 imagelabel.DrawImageResult(itemscrew[1], Qt.yellow)               
-
+        '''
+        ret = imagelabel.DrawImageResults(data)
         return ret
 
     def _ThreadTakepicture(self):
@@ -441,9 +443,14 @@ class UISettings(QDialog):
             self.takepic.clear()
             #time.sleep(1)
             try:
-                status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))        
-                status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
-                status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
+                print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
+                #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))     
+                status = self.imageTop.DrawImageResults(json.loads(self.client.ResultTest(0)))
+                #status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
+                status = self.imageLeft.DrawImageResults(json.loads(self.client.ResultTest(1)))
+                #status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
+                status = self.imageRight.DrawImageResults(json.loads(self.client.ResultTest(2)))
+                print(datetime.now().strftime("%H:%M:%S.%f"),"End Draw Info")
             except :
                 status = 5
 
@@ -463,6 +470,8 @@ class UISettings(QDialog):
                 self.lblStatus.setStyleSheet('''
                 color: red
                 ''')
+
+        print(datetime.now().strftime("%H:%M:%S.%f"),"task finished")
 
         return
 
