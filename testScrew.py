@@ -78,9 +78,9 @@ def globalAlignment(img1_color, img2_color):
 
 def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
 
-    corrcoefScore = np.zeros(40)
-    roiList = []
-    for i in range(40):
+    corrcoefScore = np.zeros(60)
+    #roiList = []
+    for i in range(60):
         rows, cols = bigImage.shape
         trans_range = 10
         # Translation
@@ -99,19 +99,19 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
         # Cross correlation coefficient
         A = np.array(imageTemplate)
         B = np.array(img)
-        if A.shape is B.shape and np.std(A.ravel()) > 0.0000000001 and np.std(B.ravel()) > 0.0000000001:
+        if A.shape == B.shape and np.std(A.ravel()) > 0.0000000001 and np.std(B.ravel()) > 0.0000000001:
             corrcoefScore[i] = np.corrcoef(A.ravel(), B.ravel())[0][1]
-            roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
+            #roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
         else:
             print('Size of test screw does not match size of profile...')
             print('Or std of A or B is 0')
             corrcoefScore[i] = 0
-            roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
+            #roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
     maxScore = max(corrcoefScore)
-    maxPos = np.argmax(corrcoefScore)
-    maxROI = roiList[maxPos]
+    #maxPos = np.argmax(corrcoefScore)
+    #maxROI = roiList[maxPos]
     #print('max corrcoef:', maxScore)
-    return maxScore, maxROI
+    return maxScore
 
 def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
     logging.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews++")
@@ -121,12 +121,12 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
     # current image
     bigImage = cv2.imread(inputImageName)
     # template image
-    templateImage = cv2.imread(inputDeviceImageName)
+    ###templateImage = cv2.imread(inputDeviceImageName)
     # global alignment
     ###transformed_img = globalAlignment(bigImage, templateImage)
     transformed_img = bigImage
     # convert to gray images
-    imageTemplateGray = cv2.cvtColor(templateImage, cv2.COLOR_BGR2GRAY)  # cv2.COLOR_BGR2GRAY
+    ###imageTemplateGray = cv2.cvtColor(templateImage, cv2.COLOR_BGR2GRAY)  # cv2.COLOR_BGR2GRAY
     imgGray = cv2.cvtColor(transformed_img, cv2.COLOR_BGR2GRAY)  # cv2.COLOR_BGR2GRAY
 
     # reading in the screw profile file
@@ -143,12 +143,14 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             roi_3 = int(words[2][:-1]) + 1
             imageTemplate = cv2.imread(screwTemplateImageName)
             imageTemplate = cv2.cvtColor(imageTemplate, cv2.COLOR_BGR2GRAY)
-            maxScore, maxROI = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
-            resultList.append([maxScore, maxROI])
+            maxScore = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
+            if maxScore < 0.45: 
+                resultList.append([maxScore, [roi_2, roi_3, roi_0, roi_1]])
     logging.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews--")
+    ##filtered_numbers = [number for number in numbers if number < 3]
     return resultList
 
-
+'''
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 #ap.add_argument("-folderName", "-profile folder name", type=str, required=True,
@@ -180,7 +182,7 @@ if os.path.exists(inputDeviceFileName) and os.path.exists(inputDeviceImageName) 
     logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews++")
     result = testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName)
     logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews--")
-    print(result)
+    #print(result)
     if resultName is not None and resultName !="":
         logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call testScrews save++")
         with open(resultName, 'w') as outfile:
@@ -191,3 +193,4 @@ if os.path.exists(inputDeviceFileName) and os.path.exists(inputDeviceImageName) 
 else:
     print("Files are not read in...")
 
+'''
