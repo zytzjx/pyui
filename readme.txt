@@ -99,7 +99,7 @@ sudo make install
 
  #sudo apt-get install libmatchbox1 -y
  
-rsync -avzP --delete pi@192.168.1.12:/home/pi/Desktop/pyUI/profiles /home/pi/Desktop/pyui/profiles/
+rsync -avzP --delete pi@192.168.1.12:/home/pi/Desktop/pyUI/profiles/ /home/pi/Desktop/pyui/profiles/
 
 #no password login ssh settings and rsync
 ssh-keygen

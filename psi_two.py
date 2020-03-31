@@ -49,15 +49,17 @@ class DrawPicThread(QThread):
         self.index = index
 
     def run(self):
+        import testrsync
         logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync++")
-        process = subprocess.Popen(["rsync", "-avzP", '--delete', '/tmp/ramdisk', "pi@192.168.1.16:/tmp/ramdisk"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        process.stdin.write(b'qa\n')
-        process.communicate()[0]
-        process.wait()
+        #process = subprocess.Popen(["rsync", "-avzP", '--delete', '/tmp/ramdisk', "pi@192.168.1.16:/tmp/ramdisk"],
+        #    stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        #process.stdin.write(b'qa\n')
+        #process.communicate()[0]
+        #process.wait()
+        testrsync.rsync()
         logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync--")
-        process.stdin.close()
-        self.imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
+        #process.stdin.close()
+        self.imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % self.index)#pixmap
 
         #status = self.imagelabel.DrawImageResults(self.data)
         #self.signal.emit((self.index, status))
@@ -218,15 +220,6 @@ class UISettings(QDialog):
 
         self.client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
 
-        if profiename == '':
-            return False
-        
-
-        #mode = 0o777
-        #os.makedirs(pathleft, mode, True) 
-        #os.makedirs(pathtop, mode, True) 
-        #os.makedirs(pathright, mode, True) 
-
     def closeEvent(self, event):
         self._shutdown()
         self.serialThread.exit_event.set()
@@ -372,6 +365,25 @@ class UISettings(QDialog):
             self.previewEvent.set() 
         else:
             self.OnPreview()
+    
+    def _loadprofileimages(self):
+        if not self.checkBox.isChecked():
+            profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+            #self.client.profilepath(self.config["profilepath"], profilename)
+            pathleft = os.path.join(self.config["profilepath"], profilename, "left")
+            pathtop = os.path.join(self.config["profilepath"], profilename, "top")
+            pathright = os.path.join(self.config["profilepath"], profilename, "right")
+            self.profileimages[0]=os.path.join(pathtop,  profilename+".jpg")
+            self.profileimages[1]=os.path.join(pathleft,  profilename+".jpg")
+            self.profileimages[2]=os.path.join(pathright,  profilename+".jpg")
+            self.imageTop.setImageScale()
+            self.imageTop.imagepixmap = QPixmap(self.profileimages[0])
+            self.imageLeft.setImageScale()
+            self.imageLeft.imagepixmap = QPixmap(self.profileimages[1])
+            self.imageRight.setImageScale()
+            self.imageRight.imagepixmap = QPixmap(self.profileimages[2])
+
+
 
     def _showImage(self, index, imagelabel):
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % index)
@@ -390,7 +402,7 @@ class UISettings(QDialog):
             #imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
             if not os.path.exists(self.profileimages[index]):
                 logging.info("profile image file not found."+self.profileimages[index])
-            imagelabel.imagepixmap = QPixmap(self.profileimages[index])#"/tmp/ramdisk/temp_%d.jpg" % index)
+            #imagelabel.imagepixmap = QPixmap(self.profileimages[index])#"/tmp/ramdisk/temp_%d.jpg" % index)
             imagelabel.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
         #self.picthread = DrawPicThread(imagelabel, index)
         #self.picthread.start()
@@ -402,6 +414,7 @@ class UISettings(QDialog):
 
     def _ThreadTakepicture(self):
         #client = ServerProxy("http://localhost:8888", allow_none=True)
+        
         profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
         self.client.profilepath(self.config["profilepath"], profilename)
         pathleft = os.path.join(self.config["profilepath"], profilename, "left")
@@ -418,10 +431,6 @@ class UISettings(QDialog):
             self._showImage(0, self.imageTop)
             self._showImage(1, self.imageLeft)
             self._showImage(2, self.imageRight)
-
-            #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))        
-            #status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
-            #status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
         except Exception as ex:
             print(str(ex))
             status = 5
@@ -430,18 +439,6 @@ class UISettings(QDialog):
 
         print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera and transfer")
         self.takepic.set()
-        '''
-        status = max([status, status1, status2])
-        if status==0:
-            self.lblStatus.setText("success")
-            self.lblStatus.setStyleSheet('color: green')
-        elif status==1:
-            self.lblStatus.setText("finish")
-            self.lblStatus.setStyleSheet('color: yellow')
-        else:
-            self.lblStatus.setText("Error")
-            self.lblStatus.setStyleSheet('color: red')
-        '''
 
     @pyqtSlot()
     def on_startclick(self):
@@ -449,6 +446,8 @@ class UISettings(QDialog):
             error_dialog = QtWidgets.QErrorMessage(self)
             error_dialog.showMessage('Oh no! Profile name is empty.') 
             return             
+        
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
 
         '''
         self.client.profilepath(self.config["profilepath"], self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText())
@@ -466,8 +465,9 @@ class UISettings(QDialog):
         self.imageTop.imagepixmap = QPixmap("/tmp/ramdisk/aaa.jpg")#pixmap
         self.imageTop.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
         '''
-
-        threading.Thread(target=self._ThreadTakepicture).start()
+        p = threading.Thread(target=self._ThreadTakepicture)
+        p.start()
+        #Process(target=self._loadprofileimages).start()
         if not self.checkBox.isChecked():
             status, status1, status2 = 0, 0, 0
             self.takepic.wait()
@@ -475,12 +475,21 @@ class UISettings(QDialog):
             #time.sleep(1)
             try:
                 print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
-                #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))     
-                status = self.imageTop.DrawImageResults(json.loads(self.client.ResultTest(0)))
+                #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))  
+                data = json.loads(self.client.ResultTest(0))
+                data=[]
+                if len(data)>0:  
+                    status = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[0]) )
                 #status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
-                status1 = self.imageLeft.DrawImageResults(json.loads(self.client.ResultTest(1)))
+                data = json.loads(self.client.ResultTest(1))
+                data=[]
+                if len(data)>0:
+                    status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
                 #status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
-                status2 = self.imageRight.DrawImageResults(json.loads(self.client.ResultTest(2)))
+                data = json.loads(self.client.ResultTest(2))
+                data=[]
+                if len(data)>0:
+                    status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
                 print(datetime.now().strftime("%H:%M:%S.%f"),"End Draw Info")
             except :
                 status = 5

@@ -154,9 +154,11 @@ class ImageLabel(QLabel):
             # Append text at the end of file
             file_object.write(text_to_append)
 
-    def DrawImageResults(self, data):
+    def DrawImageResults(self, data, imagepic):
         ret=0
-        if self._imagepixmap == None:
+        if imagepic is not None:
+            self._imagepixmap = imagepic
+        if self._imagepixmap == None or len(data)==0:
             return ret
 
         painterInstance = QPainter(self._imagepixmap)
