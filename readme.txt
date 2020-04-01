@@ -88,6 +88,9 @@ sudo apt install xscreensaver
 #pip3 install scp
 pip3 install paramiko
 
+pip3 install scikit-image
+pip3 install scipy
+
 #how to compile matchbox-keyboard
 #https://ozzmaker.com/virtual-keyboard-for-the-raspberry-pi/
 sudo apt-get install libfakekey-dev libpng-dev libxft-dev autoconf libtool -y

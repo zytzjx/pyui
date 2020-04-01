@@ -8,6 +8,7 @@ import sys
 import enum
 from xmlrpc.client import ServerProxy
 import numpy as np
+import myconstdef
 
 
 class CAMERA(enum.Enum):
@@ -38,7 +39,7 @@ class ImageLabel(QLabel):
         self.profile=profiledata.profile("","")
         self._indexscrew=0
         self.profilerootpath=os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])),"profiles")
-        self._client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
+        self._client = ServerProxy(myconstdef.URL, allow_none=True)
 
 
     def fileprechar(self, argument):
@@ -154,6 +155,11 @@ class ImageLabel(QLabel):
             # Append text at the end of file
             file_object.write(text_to_append)
 
+    def ShowPreImage(self, image):
+        self._imagepixmap = image
+        self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
+
+
     def DrawImageResults(self, data, imagepic):
         ret=0
         if imagepic is not None:
@@ -163,7 +169,7 @@ class ImageLabel(QLabel):
 
         painterInstance = QPainter(self._imagepixmap)
         penRectangle = QPen(Qt.red)
-        penRectangle.setWidth(3)
+        penRectangle.setWidth(12)
         painterInstance.setPen(penRectangle)
 
         for itemscrew in data:

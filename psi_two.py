@@ -27,7 +27,7 @@ import xmlrpc.client
 import subprocess
 import numpy as np
 
-import concurrent.futures
+import myconstdef
 
 files = []
 
@@ -126,7 +126,7 @@ class UISettings(QDialog):
         self.takelock=threading.Lock()
         self.takepic=threading.Event()
         self.startKey =False
-        self.client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
+        self.client = ServerProxy(myconstdef.URL, allow_none=True)
         self.setStyleSheet('''
         QPushButton{background-color:rgba(255,178,0,50%);
             color: white;   
@@ -159,6 +159,13 @@ class UISettings(QDialog):
     def StatusChange(self, value):
         self.takelock.acquire()
         print("value is :"+str(value))
+        if (value == 2):
+            self.OnPreview()
+        elif(value == 1):
+            self.previewEvent.set() 
+            time.sleep(0.1)
+            #start process
+            #self.on_startclick()
         self.takelock.release()
 
     #@staticmethod
@@ -218,9 +225,10 @@ class UISettings(QDialog):
             with open('config.json') as json_file:
                 self.config = json.load(json_file)
 
-        self.client = ServerProxy("http://192.168.1.12:8888", allow_none=True)
+        self.client = ServerProxy(myconstdef.URL, allow_none=True)
 
     def closeEvent(self, event):
+        self.previewEvent.set()
         self._shutdown()
         self.serialThread.exit_event.set()
         self.close()
@@ -255,7 +263,7 @@ class UISettings(QDialog):
         #ssh.set_missing_host_key_policy(AutoAddPolicy())
         ssh.load_system_host_keys()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname='192.168.1.12', username='pi', password='qa', look_for_keys=False)
+        ssh.connect(hostname=myconstdef.IP, username='pi', password='qa', look_for_keys=False)
 
         stdin, stdout, stderr = ssh.exec_command('DISPLAY=:0.0 python3 ~/Desktop/pyUI/servertask.py')
         bErrOut = True
@@ -477,17 +485,14 @@ class UISettings(QDialog):
                 print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
                 #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))  
                 data = json.loads(self.client.ResultTest(0))
-                data=[]
                 if len(data)>0:  
                     status = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[0]) )
                 #status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
                 data = json.loads(self.client.ResultTest(1))
-                data=[]
                 if len(data)>0:
                     status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
                 #status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
                 data = json.loads(self.client.ResultTest(2))
-                data=[]
                 if len(data)>0:
                     status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
                 print(datetime.now().strftime("%H:%M:%S.%f"),"End Draw Info")
@@ -530,6 +535,7 @@ class UISettings(QDialog):
         #client = ServerProxy("http://localhost:8888", allow_none=True)
         #url = 'http://127.0.0.1:5000/startpause'
         #urllib.request.urlopen(url)
+        self.imageTop.setImageScale() 
         logging.info(self.client.startpause())
         time.sleep(0.1)
         while True:
@@ -538,7 +544,8 @@ class UISettings(QDialog):
             image = Image.open(io.BytesIO(data))
             imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
             pixmap = QPixmap.fromImage(imageq)
-            self.imageTop.imagepixmap = pixmap
+            #self.imageTop.imagepixmap = pixmap
+            self.imageTop.ShowPreImage(pixmap)
             if self.previewEvent.is_set():
                 self.previewEvent.clear()
                 #url = 'http://127.0.0.1:5000/startpause'

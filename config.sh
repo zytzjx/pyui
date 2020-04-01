@@ -20,6 +20,7 @@ pip3 install paramiko
 sudo apt-get -y install qt5-default pyqt5-dev pyqt5-dev-tools
 sudo apt-get -y install matchbox-keyboard
 sudo apt -y install python3-opencv python3-opencv-apps
+sudo apt-get install libatlas-base-dev
 
 
 
@@ -34,7 +35,7 @@ sudo apt-get -y autoremove
 
 #setting up raspi share network
 sudo sysctl -w net.ipv4.ip_forward=1
-sudo ifconfig eth0 169.254.115.191 netmask 255.255.0.0 up
+sudo ifconfig eth0 169.254.107.211 netmask 255.255.0.0 up
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-sudo iptables -I FORWARD -o eth0 -s 169.254.115.191/16 -j ACCEPT
-sudo iptables -I INPUT -s 169.254.115.191/16 -j ACCEPT
+sudo iptables -I FORWARD -o eth0 -s 169.254.107.211/16 -j ACCEPT
+sudo iptables -I INPUT -s 169.254.107.211/16 -j ACCEPT
