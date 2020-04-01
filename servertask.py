@@ -24,6 +24,7 @@ import profiledata
 import testScrew
 
 import json
+import subprocess
 
 
 class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
@@ -157,6 +158,13 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self._shutdownpreview()
         server.shutdown()
 
+    def SyncRamdisks(self):
+    #rsync -avzP --delete pi@192.168.1.12:/home/pi/Desktop/pyUI/profiles /home/pi/Desktop/pyui/profiles/
+        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync++")
+        subprocess.call(["rsync", "-avzP", '--delete', '/tmp/ramdisk/', "pi@192.168.1.16:/tmp/ramdisk"])
+        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync--")
+
+
     def _callyanfunction(self, index):
         print('callyanfunction:' +self.profilename)
         txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
@@ -168,7 +176,6 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   *testScrews**")
             try:
                 '''
-                import subprocess
                 resultjon = "/tmp/ramdisk/result_%d.json" % index
                 cmdline=' python3 testScrew.py -txtfilename "{0}" -jpgfilename "{1}" -testImageName {2} -result {3}'.format(
                     txtfilename, smplfilename, "/tmp/ramdisk/phoneimage_%d.jpg" % index, resultjon
@@ -363,11 +370,13 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return self.capture(index, IsDetect)
 
     def ResultTest(self, index):  
-        for st in self.yanthreads:
-            if st.isAlive():
-                st.join()
+        #for st in self.yanthreads:
+        #    if st.isAlive():
+        #        st.join()
 
-        self.yanthreads=[]
+        #self.yanthreads=[]
+        if self.yanthreads[index].isAlive():
+            self.yanthreads[index].join()
         data=[]     
         if index<3:
             data = self.imageresults[index]
