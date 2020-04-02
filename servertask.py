@@ -56,6 +56,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self.yanthreads=[]
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self._config={}
+        self._tpreview =None
 
     def setConfig(self, sconfig):
         if not (sconfig is None or sconfig==""):
@@ -104,6 +105,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
                     if self.pause_event.is_set():
                         self.pause_event.clear()
                         break
+
             if self.quit_event.is_set():
                 break
         logging.info("preview: thread is terminated")
@@ -385,8 +387,9 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return ss
 
     def _StartDaemon(self):
-        t = threading.Thread(target=self._preview, daemon=True)
-        t.start()
+        if self._tpreview is None or not self._tpreview.is_alive():
+            self._tpreview = threading.Thread(target=self._preview, daemon=True)
+            self._tpreview.start()
 
 
 '''
