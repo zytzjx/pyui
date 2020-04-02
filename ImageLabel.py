@@ -132,13 +132,13 @@ class ImageLabel(QLabel):
         profilepath=os.path.join(self.profilerootpath, self.profile.profilename)
         filename = self.fileprechar(self._camerapoisition)+str(self._indexscrew)+".png" 
         profilepath=os.path.join(profilepath, self.DirSub(self._camerapoisition), filename)
-        self._indexscrew+=1
         cropQPixmap.save(profilepath)
         screwpoint = profiledata.screw(self.profile.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
         self.ProfilePoint.append(screwpoint)
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
         profiletxt = os.path.join(self.profilerootpath, self.profile.profilename, self.DirSub(self._camerapoisition),  self.profile.profilename+".txt")
         self.append_new_line(profiletxt, sinfo)
+        self._indexscrew+=1
 
 
 
@@ -224,11 +224,12 @@ class ImageLabel(QLabel):
 
             # set rectangle color and thickness
             penRectangle = QPen(clr)
-            penRectangle.setWidth(3)
+            penRectangle.setWidth(6)
 
             # draw rectangle on painter
             painterInstance.setPen(penRectangle)
             painterInstance.drawEllipse(QPoint(x * self.scalex, y*self.scaley),25,25)
+            painterInstance.drawText(QPoint(x * self.scalex+25, y*self.scaley+25), str(self._indexscrew))
             #self.ProfilePoint.append(QPoint(x * self.scalex, y*self.scaley))
 
             # set pixmap onto the label widget

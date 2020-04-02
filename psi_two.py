@@ -78,6 +78,7 @@ class StatusCheckThread(QThread):
         ser = serial.serial_for_url('alt://{}'.format(self.serialport), baudrate=9600, timeout=1)
     #ser = serial.Serial('/dev/ttyUSB0', baudrate=9600, timeout=1)
         status=-1
+        oldstatus=-1
         with serial.threaded.ReaderThread(ser, FDProtocol) as statusser:
             while not self.exit_event.is_set():
                 if statusser.proximityStatus and not statusser.ultraSonicStatus:
@@ -91,7 +92,9 @@ class StatusCheckThread(QThread):
                 elif statusser.ultraSonicStatus:
                     if status != 3:
                         status = 3
-                self.signal.emit(status)
+                if oldstatus!=status:
+                    self.signal.emit(status)
+                    oldstatus = status
                 #time.sleep(0.05)
                 self.msleep(50)
 
@@ -150,8 +153,7 @@ class UISettings(QDialog):
 
         self.serialThread = StatusCheckThread()
         self.serialThread.signal.connect(self.StatusChange)
-        #self.serialThread.start()
-
+ 
         self.threadPreview=None
         #self.imageResults=[0]*3
         self.profileimages=["","",""]
@@ -399,7 +401,13 @@ class UISettings(QDialog):
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
         imagelabel.setImageScale()     
         if self.checkBox.isChecked():
-            pass
+            data = self.client.imageDownload(index).data
+            print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
+            image = Image.open(io.BytesIO(data))
+            image.save("/tmp/ramdisk/temp_%d.jpg" % index)
+            #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+            #pixmap = QPixmap.fromImage(imageq)
+            imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
         else:
             '''data = self.client.imageDownload(index).data
             print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
@@ -529,17 +537,10 @@ class UISettings(QDialog):
 
 
     def _GetImageShow(self):
-        #from PIL import Image
-        #import urllib.request
-
-        #client = ServerProxy("http://localhost:8888", allow_none=True)
-        #url = 'http://127.0.0.1:5000/startpause'
-        #urllib.request.urlopen(url)
         self.imageTop.setImageScale() 
         logging.info(self.client.startpause())
         time.sleep(0.1)
         while True:
-            #url = 'http://127.0.0.1:5000/preview'
             data = self.client.preview().data
             image = Image.open(io.BytesIO(data))
             imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
@@ -548,8 +549,6 @@ class UISettings(QDialog):
             self.imageTop.ShowPreImage(pixmap)
             if self.previewEvent.is_set():
                 self.previewEvent.clear()
-                #url = 'http://127.0.0.1:5000/startpause'
-                #urllib.request.urlopen(url)
                 self.client.startpause()
                 break
 
@@ -562,6 +561,8 @@ class UISettings(QDialog):
         window.tabWidget.setCurrentIndex(2)
         time.sleep(0.1)
         window.tabWidget.setCurrentIndex(0)
+        self.serialThread.start()
+
 
     def OnPreview(self):
         if self.threadPreview==None or not self.threadPreview.is_alive():
