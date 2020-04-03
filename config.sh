@@ -20,7 +20,7 @@ pip3 install paramiko
 sudo apt-get -y install qt5-default pyqt5-dev pyqt5-dev-tools
 sudo apt-get -y install matchbox-keyboard
 sudo apt -y install python3-opencv python3-opencv-apps
-sudo apt-get install libatlas-base-dev
+sudo apt-get -y install libatlas-base-dev
 
 
 
@@ -33,9 +33,30 @@ sudo apt-get -y purge libreoffice*
 sudo apt-get -y clean
 sudo apt-get -y autoremove
 
+##uponly
+sudo apt-get install libfakekey-dev libpng-dev libxft-dev autoconf libtool -y
+cd /tmp/ramdisk
+git clone https://github.com/xlab/matchbox-keyboard.git
+cd matchbox-keyboard
+./autogen.sh
+make
+sudo make install
+cd ~/Desktop/pyUI
+
+
+##end uponly
+
+#### downonly
+pip3 install scikit-image
+pip3 install scipy
+##end downonly
+
+
+
+#https://blog.csdn.net/qq1187239259/article/details/80022272
 #setting up raspi share network
-sudo sysctl -w net.ipv4.ip_forward=1
-sudo ifconfig eth0 169.254.107.211 netmask 255.255.0.0 up
-sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-sudo iptables -I FORWARD -o eth0 -s 169.254.107.211/16 -j ACCEPT
-sudo iptables -I INPUT -s 169.254.107.211/16 -j ACCEPT
+#sudo sysctl -w net.ipv4.ip_forward=1
+#sudo ifconfig eth0 169.254.107.211 netmask 255.255.0.0 up
+#sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+#sudo iptables -I FORWARD -o eth0 -s 169.254.107.211/16 -j ACCEPT
+#sudo iptables -I INPUT -s 169.254.107.211/16 -j ACCEPT

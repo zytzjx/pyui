@@ -63,18 +63,19 @@ class FDProtocol(serial.threaded.LineReader):
             #        self.ultraSonicStatus = False
             #        print("Am less 5\n")
             if m.group(1) =="Proximity":
-                if int(m.group(2))<150:
+                #print(line)
+                if int(m.group(2))<8000:
                     self.proximity.set()
                     self.proximityStatus = False
-                    print("Proximity is %s\n" % m.group(2))
+                    #print("Proximity is %s\n" % m.group(2))
                 else:
                     self.proximity.clear()
                     self.proximityStatus = True
             elif m.group(1) == "Distance":
-                if int(m.group(2)) > 500:
+                if int(m.group(2)) > 600:
                     self.ultraSonic.set()
                     self.ultraSonicStatus = False
-                    print("Distance is %s\n" % m.group(2))
+                    #print("Distance is %s\n" % m.group(2))
                 else:
                     self.ultraSonic.clear()
                     self.ultraSonicStatus = True

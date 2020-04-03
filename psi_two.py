@@ -265,7 +265,7 @@ class UISettings(QDialog):
         #ssh.set_missing_host_key_policy(AutoAddPolicy())
         ssh.load_system_host_keys()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname=myconstdef.IP, username='pi', password='qa', look_for_keys=False)
+        ssh.connect(hostname=myconstdef.IP, username='pi', password=myconstdef.PSSWORD, look_for_keys=False)
 
         stdin, stdout, stderr = ssh.exec_command('DISPLAY=:0.0 python3 ~/Desktop/pyUI/servertask.py')
         bErrOut = True
