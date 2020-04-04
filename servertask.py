@@ -132,6 +132,8 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         elif not pause and not self.IsPreviewing:
             print("pause:False, IsPreviewing:False")
             self.pause_event.set()
+            while not self.IsPreviewing:
+                time.sleep(0.01)
         else:
             print(str(pause)+":"+str(self.IsPreviewing))
             pass
