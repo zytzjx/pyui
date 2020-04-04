@@ -373,6 +373,7 @@ class UISettings(QDialog):
         clickevent = sender.text()
         if clickevent == u'Image UP':
             self.previewEvent.set() 
+            self.client.startpause(True)
         else:
             self.OnPreview()
     
@@ -429,8 +430,6 @@ class UISettings(QDialog):
         return ret
 
     def _ThreadTakepicture(self):
-        #client = ServerProxy("http://localhost:8888", allow_none=True)
-        
         profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
         self.client.profilepath(self.config["profilepath"], profilename)
         pathleft = os.path.join(self.config["profilepath"], profilename, "left")
@@ -464,6 +463,9 @@ class UISettings(QDialog):
             return             
         
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
+        self.previewEvent.set() 
+        while self.threadPreview.is_alive():
+            time.sleep(0.1)
 
         '''
         self.client.profilepath(self.config["profilepath"], self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText())
@@ -538,7 +540,7 @@ class UISettings(QDialog):
 
     def _GetImageShow(self):
         self.imageTop.setImageScale() 
-        logging.info(self.client.startpause())
+        logging.info(self.client.startpause(False))
         time.sleep(0.1)
         while True:
             data = self.client.preview().data
@@ -549,7 +551,7 @@ class UISettings(QDialog):
             self.imageTop.ShowPreImage(pixmap)
             if self.previewEvent.is_set():
                 self.previewEvent.clear()
-                self.client.startpause()
+                self.client.startpause(True)
                 break
 
     def ChangeTab(self):
@@ -565,9 +567,11 @@ class UISettings(QDialog):
 
 
     def OnPreview(self):
+        self.client.startpause(False)
         if self.threadPreview==None or not self.threadPreview.is_alive():
             self.threadPreview= threading.Thread(target=self._GetImageShow)
             self.threadPreview.start()
+        
  
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)   

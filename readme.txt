@@ -110,4 +110,24 @@ ssh-keygen
 ssh-copy-id -i ~/.ssh/id_rsa.pub remote-host
 ssh remote-host
 
+#使用sed命令删除\r字符
+sed -i 's/\r//g' /etc/network/interfaces 
 
+#/etc/network/interfaces
+auto lo
+iface lo inet loopback
+auto eth0
+iface eth0 inet static
+
+address 169.254.115.191
+gateway 169.254.107.211
+netmask 255.255.0.0
+network 169.254.0.0
+broadcast 169.254.255.255
+
+
+
+#take picture settings
+cd /tmp
+wget https://project-downloads.drogon.net/wiringpi-latest.deb
+sudo dpkg -i wiringpi-latest.deb
