@@ -57,6 +57,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self._config={}
         self._tpreview =None
+        self.IsPreviewing=False
 
     def setConfig(self, sconfig):
         if not (sconfig is None or sconfig==""):
@@ -74,9 +75,12 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def _preview(self):
         while True:
             logging.info("preview: thread is starting...")
+            self.IsPreviewing=False
             self.pause_event.wait()
+            self.IsPreviewing=True
             self.pause_event.clear()
             if self.quit_event.is_set():
+                self.IsPreviewing=False
                 break
             self._setactivecamera(0)
             stream = io.BytesIO()
@@ -87,6 +91,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
                 #time.sleep(2)
                 for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
                     stream.seek(0)
+                    self.IsPreviewing=True
                     image = Image.open(stream)
                     if self.save_image_event.is_set():
                         # with open("foo.jpg", "w") as f:                
@@ -102,11 +107,13 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
                         
                     stream.seek(0)
                     stream.truncate()
-                    if self.pause_event.is_set():
+                    if self.pause_event.is_set() or self.quit_event.is_set():
                         self.pause_event.clear()
+                        self.IsPreviewing=False
                         break
 
             if self.quit_event.is_set():
+                self.IsPreviewing=False
                 break
         logging.info("preview: thread is terminated")
 
@@ -118,8 +125,16 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         data = self.image_ready.read()
         return xmlrpc.client.Binary(data)#send_file(image_ready, mimetype='image/jpeg')
 
-    def startpause(self):
-        self.pause_event.set()
+    def startpause(self, pause=True):
+        if pause and self.IsPreviewing:
+            print("pause:True, IsPreviewing:True")
+            self.pause_event.set()
+        elif not pause and not self.IsPreviewing:
+            print("pause:False, IsPreviewing:False")
+            self.pause_event.set()
+        else:
+            print(str(pause)+":"+str(self.IsPreviewing))
+            pass
         return "OK"
 
 
@@ -157,7 +172,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return self._profilepath
 
     def CloseServer(self):
-        self._shutdownpreview()
+        self._shutdownpreview()       
         server.shutdown()
 
     def SyncRamdisks(self):
@@ -309,6 +324,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         }
         return switcher.get(argument, "Invalid")
 
+    '''
     def _ChangeImageSize(self, index, scale_percent=25):
         import cv2
         cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % index
@@ -327,17 +343,10 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def imageDownload(self, cam, IsDetect=True):
         #cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam
-        '''
-        image = Image.open(cmd)
-        imagenew = image.resize((image.width/4, image.height/4))
-        from io import BytesIO
-        byte_io = BytesIO()
-        imagenew.save(byte_io, 'JPEG')
-        '''
         cmd = self._ChangeImageSize(cam)
         handle = open(cmd, 'rb')
         return xmlrpc.client.Binary(handle.read())
-
+    '''
     def capture(self, cam, IsDetect=True):
         cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         os.system(cmd)
@@ -391,20 +400,6 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             self._tpreview = threading.Thread(target=self._preview, daemon=True)
             self._tpreview.start()
 
-
-'''
-# 供客户端下载文件
-def image_get():
-    handle = open("boy.jpg", 'rb')
-    return xmlrpc.client.Binary(handle.read())
-
-
-# 供客户端上传文件
-def image_put(data):
-    handle = open("get_girl.jpg", 'wb')
-    handle.write(data.data)
-    handle.close()
-'''
 
 if __name__ == '__main__':
     app = QApplication([])
