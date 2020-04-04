@@ -498,17 +498,14 @@ class UISettings(QDialog):
                 print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
                 #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))  
                 data = json.loads(self.client.ResultTest(0))
-                data=[]
                 if len(data)>0:  
                     status = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[0]) )
                 #status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
                 data = json.loads(self.client.ResultTest(1))
-                data=[]
                 if len(data)>0:
                     status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
                 #status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
                 data = json.loads(self.client.ResultTest(2))
-                data=[]
                 if len(data)>0:
                     status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
                 print(datetime.now().strftime("%H:%M:%S.%f"),"End Draw Info")
