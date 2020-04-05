@@ -33,10 +33,6 @@ class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
 
 class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def __init__(self):
-        #RPCServer.__init__(self)
-        #self.imageresult0=[]
-        #self.imageresult1=[]
-        #self.imageresult2=[]
         self.imageresults=[[],[],[]]
         self.profilename=""
         self.rootprofielpath=""
@@ -174,7 +170,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return self._profilepath
 
     def CloseServer(self):
-        self._shutdownpreview()       
+        #self._shutdownpreview()       
         server.shutdown()
 
     def SyncRamdisks(self):
@@ -194,30 +190,11 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             self.lockyan.acquire()
             logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   *testScrews**")
             try:
-                '''
-                resultjon = "/tmp/ramdisk/result_%d.json" % index
-                cmdline=' python3 testScrew.py -txtfilename "{0}" -jpgfilename "{1}" -testImageName {2} -result {3}'.format(
-                    txtfilename, smplfilename, "/tmp/ramdisk/phoneimage_%d.jpg" % index, resultjon
-                )
-                logging.info(cmdline)
-                #os.system(cmdline)
-                subprocess.call(["python3", "testScrew.py", '-txtfilename', txtfilename, '-jpgfilename', smplfilename, '-testImageName', "/tmp/ramdisk/phoneimage_%d.jpg" % index, '-result', resultjon])
-                logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   -testScrews--")
-
-                '''
                 dataresult = testScrew.testScrews(
                     txtfilename, 
                     smplfilename, 
                     "/tmp/ramdisk/phoneimage_%d.jpg" % index)
                 self.imageresults[index] = dataresult
-                '''
-                if os.path.exists(resultjon):
-                    with open(resultjon) as json_file:
-                        dataresult = json.load(json_file)                    
-                        self.imageresults[index] = dataresult
-                else:
-                    self.imageresults[index] = []
-                '''
             except :
                 self.imageresults[index] = []
                 pass
@@ -392,17 +369,11 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 if __name__ == '__main__':
     app = QApplication([])
     server = ThreadXMLRPCServer(('0.0.0.0', 8888), allow_none=True) # 初始化
-    #server.register_function(image_put, 'image_put')
-    #server.register_function(image_get, 'image_get')
     handler = RequestHandler()
-    #handler.Init()
     server.register_instance(handler)
     print ("Listening for Client")
-    #server.serve_forever() # 保持等待调用状态
     try:
-        #http_server.serve_forever()
         server.serve_forever()
     except KeyboardInterrupt:
         print("Exiting")
     
-    #handler.Uninit()

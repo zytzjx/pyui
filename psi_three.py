@@ -27,6 +27,7 @@ import xmlrpc.client
 import subprocess
 import numpy as np
 
+import testScrew
 import myconstdef
 
 files = []
@@ -102,7 +103,6 @@ class UISettings(QDialog):
     """Settings dialog widget
     """
     #filepath=""
-    pixmap = None
     keyboardID=0
     resized = pyqtSignal()
     def __init__(self, parent=None):
@@ -128,8 +128,10 @@ class UISettings(QDialog):
         self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
         self.takelock=threading.Lock()
         self.takepic=threading.Event()
+        self.stop_prv = threading.Event()
         self.startKey =False
-        self.client = ServerProxy(myconstdef.URL, allow_none=True)
+        self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
+        self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
         self.setStyleSheet('''
         QPushButton{background-color:rgba(255,178,0,50%);
             color: white;   
@@ -151,12 +153,15 @@ class UISettings(QDialog):
 
         self.config=settings.DEFAULTCONFIG
 
-        self.serialThread = StatusCheckThread()
-        self.serialThread.signal.connect(self.StatusChange)
+        #self.serialThread = StatusCheckThread()
+        #self.serialThread.signal.connect(self.StatusChange)
  
         self.threadPreview=None
         #self.imageResults=[0]*3
         self.profileimages=["","",""]
+        self.imageresults = []
+        self.yanthread=None
+        self._profilepath=""
 
     def StatusChange(self, value):
         self.takelock.acquire()
@@ -227,10 +232,11 @@ class UISettings(QDialog):
             with open('config.json') as json_file:
                 self.config = json.load(json_file)
 
-        self.client = ServerProxy(myconstdef.URL, allow_none=True)
+        self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
+        self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
 
     def closeEvent(self, event):
-        self.previewEvent.set()
+        self.stop_prv.set()
         while self.threadPreview.is_alive():
             time.sleep(0.1)
         self._shutdown()
@@ -251,9 +257,13 @@ class UISettings(QDialog):
 
     def updateProfile(self):
         self.createprofiledirstruct("")
-        fpath=self.config["profilepath"]
+        self._profilepath=self.config["profilepath"]
         #client = ServerProxy("http://localhost:8888", allow_none=True)
-        self.comboBox.addItems(self.client.updateProfile(fpath))
+        #self.comboBox.addItems(self.client.updateProfile(fpath))
+        self.comboBox.addItems([name for name in os.listdir(self._profilepath) if os.path.isdir(os.path.join(self._profilepath, name))])
+        #self.comboBox.addItems(fpath)
+        #self.clientleft.updateProfile(fpath)
+        #self.clientright.updateProfile(fpath)
         self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config else 0)
         #curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
         #profilepath=os.path.join(curpath,"profiles")
@@ -284,25 +294,35 @@ class UISettings(QDialog):
         ssh.close()
 
 
-    '''    
     def PreviewCamera(self):
         # Create the in-memory stream
+        logging.info("preview: thread is starting...")
+        self.stop_prv.clear()
+        #while not self.stop_prv.is_set():
         stream = io.BytesIO()
         with picamera.PiCamera() as camera:
-            camera.start_preview()
-            time.sleep(1)
-            camera.capture(stream, format='jpeg')
-            camera.stop_preview()
-        # "Rewind" the stream to the beginning so we can read its content
-        stream.seek(0)
-        image = Image.open(stream)
-        imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        #qimage = QImage(imageq)
-        #pixmap = QPixmap(qimage)
-        pixmap = QPixmap.fromImage(imageq)
-        self.imageTop.imagepixmap = pixmap
-        #self.lblImage.setPixmap(self.pixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))   
-    '''
+            camera.ISO = 50
+            camera.resolution=(640,480)
+            for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
+                stream.truncate()
+                stream.seek(0)
+                image = Image.open(stream)
+                imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+                pixmap = QPixmap.fromImage(imageq)
+                self.imageTop.ShowPreImage(pixmap)
+                #self.imageTop.pixmap = pixmap
+                stream.seek(0)
+                stream.truncate()
+
+                if self.stop_prv.is_set():
+                    self.stop_prv.clear()
+                    break
+                    
+            camera.close()
+ 
+        self.stop_prv.clear()
+        logging.info("preview: thread ending...")
+
 
     @pyqtSlot()
     def btnstate(self):
@@ -374,16 +394,15 @@ class UISettings(QDialog):
         sender = self.sender()
         clickevent = sender.text()
         if clickevent == u'Image UP':
-            self.previewEvent.set() 
-            time.sleep(0.1)
-            self.client.startpause(True)
+            self.stop_prv.set() 
         else:
             self.OnPreview()
     
     def _loadprofileimages(self):
         if not self.checkBox.isChecked():
             profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-            #self.client.profilepath(self.config["profilepath"], profilename)
+            #self.clientleft.profilepath(self.config["profilepath"], profilename)
+            #self.clientright.profilepath(self.config["profilepath"], profilename)
             pathleft = os.path.join(self.config["profilepath"], profilename, "left")
             pathtop = os.path.join(self.config["profilepath"], profilename, "top")
             pathright = os.path.join(self.config["profilepath"], profilename, "right")
@@ -397,65 +416,122 @@ class UISettings(QDialog):
             self.imageRight.setImageScale()
             self.imageRight.imagepixmap = QPixmap(self.profileimages[2])
 
+    def _DirSub(self, argument):
+        switcher = {
+            1: "left",
+            0: "top",
+            2: "right",
+        }
+        return switcher.get(argument, "Invalid")
 
+    def capture(self, cam, IsDetect=True):
+        cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        os.system(cmd)
+        if not IsDetect:
+            shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
+        else:
+            self._startdetectthread(cam)
+
+    def _callyanfunction(self, index):
+        profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+        print('callyanfunction:' + profilename)
+        txtfilename=os.path.join(self._profilepath, self._DirSub(index), profilename+".txt")
+        smplfilename=os.path.join(self._profilepath, self._DirSub(index), profilename+".jpg")
+        logging.info(txtfilename)
+        logging.info(smplfilename)
+        if os.path.exists(txtfilename) and os.path.exists(smplfilename):
+            #self.lockyan.acquire()
+            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   *testScrews**")
+            try:
+                self.imageresults = testScrew.testScrews(
+                    txtfilename, 
+                    smplfilename, 
+                    "/tmp/ramdisk/phoneimage_%d.jpg" % index)
+            except :
+                self.imageresults = []
+                pass
+            
+            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   -testScrews end--")
+            #self.lockyan.release()
+            print(self.imageresults)
+
+    def _startdetectthread(self, index):
+        self.yanthread = threading.Thread(target=self._callyanfunction, args=(index,))
+        self.yanthread.start()
+        self.yanthread.join()
 
     def _showImage(self, index, imagelabel):
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % index)
-        self.client.TakePicture(index, not self.checkBox.isChecked())   
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
         imagelabel.setImageScale()     
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % index)
+        if index==1:
+            self.clientleft.TakePicture(index, not self.checkBox.isChecked()) 
+        elif index==2:
+            self.clientright.TakePicture(index, not self.checkBox.isChecked())  
+        elif index == 0:
+            self.capture(0, not self.checkBox.isChecked())
+
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
         if self.checkBox.isChecked():
-            data = self.client.imageDownload(index).data
-            print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
-            image = Image.open(io.BytesIO(data))
-            image.save("/tmp/ramdisk/temp_%d.jpg" % index)
-            #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-            #pixmap = QPixmap.fromImage(imageq)
-            imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
+            if index==0:
+                imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index)#pixmap
+            else:
+                data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
+                print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
+                image = Image.open(io.BytesIO(data))
+                image.save("/tmp/ramdisk/temp_%d.jpg" % index)
+                #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+                #pixmap = QPixmap.fromImage(imageq)
+                imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
         else:
-            '''data = self.client.imageDownload(index).data
-            print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
-            image = Image.open(io.BytesIO(data))
-            image.save("/tmp/ramdisk/temp_%d.jpg" % index)
-            #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-            #pixmap = QPixmap.fromImage(imageq)'''
-            #imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
-            if not os.path.exists(self.profileimages[index]):
-                logging.info("profile image file not found."+self.profileimages[index])
-            #imagelabel.imagepixmap = QPixmap(self.profileimages[index])#"/tmp/ramdisk/temp_%d.jpg" % index)
             imagelabel.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
-        #self.picthread = DrawPicThread(imagelabel, index)
-        #self.picthread.start()
+            if index==0:
+                imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index))
+            else:
+                pass
 
     def _drawtestScrew(self, index, imagelabel):
         ret=0
-        ret = imagelabel.DrawImageResults(json.loads(self.client.ResultTest(index)))
+        if index==0:
+            ret = imagelabel.DrawImageResults(self.imageresults)
+        else:
+            ss = self.clientleft.ResultTest(index) if index==1 else self.clientright.ResultTest(index)
+            ret = imagelabel.DrawImageResults(json.loads(ss))
         return ret
 
-    def _ThreadTakepicture(self):
-        profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        self.client.profilepath(self.config["profilepath"], profilename)
-        pathleft = os.path.join(self.config["profilepath"], profilename, "left")
-        pathtop = os.path.join(self.config["profilepath"], profilename, "top")
-        pathright = os.path.join(self.config["profilepath"], profilename, "right")
-        self.profileimages[0]=os.path.join(pathtop,  profilename+".jpg")
-        self.profileimages[1]=os.path.join(pathleft,  profilename+".jpg")
-        self.profileimages[2]=os.path.join(pathright,  profilename+".jpg")
-
-        self.takelock.acquire()
-        status, status1, status2 = 0, 0, 0
-        self.takepic.clear()
+    def _ThreadTakepictureLeft(self):
         try:
-            self._showImage(0, self.imageTop)
             self._showImage(1, self.imageLeft)
+        except Exception as ex:
+            print(str(ex))
+            status = 5
+
+        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera Left and transfer")
+
+    def _ThreadTakepictureRight(self):
+        try:
             self._showImage(2, self.imageRight)
         except Exception as ex:
             print(str(ex))
             status = 5
-        finally:
-            self.takelock.release()
 
-        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera and transfer")
+        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera right and transfer")
+
+
+    def _ThreadTakepicture(self):
+        #self.takelock.acquire()
+        #status, status1, status2 = 0, 0, 0
+        self.takepic.clear()
+        try:
+            self._showImage(0, self.imageTop)
+            #self._showImage(1, self.imageLeft)
+            #self._showImage(2, self.imageRight)
+        except Exception as ex:
+            print(str(ex))
+            status = 5
+        #finally:
+        #    self.takelock.release()
+
+        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera A and transfer")
         self.takepic.set()
 
     @pyqtSlot()
@@ -466,45 +542,39 @@ class UISettings(QDialog):
             return             
         
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
-        self.previewEvent.set() 
-        while self.threadPreview.is_alive():
-            time.sleep(0.1)
+        self.stop_prv.set() 
+        profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+        #self.clientleft.profilepath(self.config["profilepath"], profilename)
+        #self.clientright.profilepath(self.config["profilepath"], profilename)
+        self._profilepath = os.path.join(self.config["profilepath"], profilename)
+        pathleft = os.path.join(self.config["profilepath"], profilename, "left")
+        pathtop = os.path.join(self.config["profilepath"], profilename, "top")
+        pathright = os.path.join(self.config["profilepath"], profilename, "right")
+        self.profileimages[0]=os.path.join(pathtop,  profilename+".jpg")
+        self.profileimages[1]=os.path.join(pathleft,  profilename+".jpg")
+        self.profileimages[2]=os.path.join(pathright,  profilename+".jpg")
 
-        '''
-        self.client.profilepath(self.config["profilepath"], self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText())
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % 0)
-        self.client.TakePicture(0, self.checkBox.isChecked())   
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % 0)
-        self.imageTop.setImageScale()     
-        data = self.client.imageDownload(0).data
-        print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % 0)
-        image = Image.open(io.BytesIO(data))
-        image.save("/tmp/ramdisk/aaa.jpg")
-        #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-        #pixmap = QPixmap.fromImage(imageq)
-        #self.imageTop.setServerProxy(self.client)
-        self.imageTop.imagepixmap = QPixmap("/tmp/ramdisk/aaa.jpg")#pixmap
-        self.imageTop.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
-        '''
+
         p = threading.Thread(target=self._ThreadTakepicture)
         p.start()
+        pLeft = threading.Thread(target=self._ThreadTakepictureLeft)
+        pLeft.start()
+        pRight = threading.Thread(target=self._ThreadTakepictureRight)
+        pRight.start()
+        p.join()
+        pLeft.join()
+        pRight.join()
         #Process(target=self._loadprofileimages).start()
         if not self.checkBox.isChecked():
             status, status1, status2 = 0, 0, 0
             self.takepic.wait()
             self.takepic.clear()
-            #time.sleep(1)
             try:
                 print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
-                #status=self._drawtestScrew(0, self.imageTop, json.loads(self.client.ResultTest(0)))  
-                data = json.loads(self.client.ResultTest(0))
-                if len(data)>0:  
-                    status = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[0]) )
-                #status1=self._drawtestScrew(1, self.imageLeft, json.loads(self.client.ResultTest(1)))
+                status = self.imageTop.DrawImageResults(self.imageresults, None )
                 data = json.loads(self.client.ResultTest(1))
                 if len(data)>0:
                     status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
-                #status2=self._drawtestScrew(2, self.imageRight, json.loads(self.client.ResultTest(2)))
                 data = json.loads(self.client.ResultTest(2))
                 if len(data)>0:
                     status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
@@ -536,26 +606,10 @@ class UISettings(QDialog):
     def _shutdown(self):
         #client = ServerProxy("http://localhost:8888", allow_none=True)
         try:
-            self.client.CloseServer()
+            self.clientleft.CloseServer()
+            self.clientright.CloseServer()
         except :
             pass
-
-
-    def _GetImageShow(self):
-        self.imageTop.setImageScale() 
-        logging.info(self.client.startpause(False))
-        time.sleep(0.1)
-        while True:
-            data = self.client.preview().data
-            image = Image.open(io.BytesIO(data))
-            imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-            pixmap = QPixmap.fromImage(imageq)
-            #self.imageTop.imagepixmap = pixmap
-            self.imageTop.ShowPreImage(pixmap)
-            if self.previewEvent.is_set():
-                self.previewEvent.clear()
-                self.client.startpause(True)
-                break
 
     def ChangeTab(self):
         time.sleep(0.1)
@@ -566,13 +620,15 @@ class UISettings(QDialog):
         window.tabWidget.setCurrentIndex(2)
         time.sleep(0.1)
         window.tabWidget.setCurrentIndex(0)
-        self.serialThread.start()
+        #self.serialThread.start()
+        self.imageTop.setImageScale() 
+        self.imageLeft.setImageScale() 
+        self.imageRight.setImageScale() 
 
 
     def OnPreview(self):
-        #self.client.startpause(False)
         if self.threadPreview==None or not self.threadPreview.is_alive():
-            self.threadPreview= threading.Thread(target=self._GetImageShow)
+            self.threadPreview= threading.Thread(target=self.PreviewCamera)
             self.threadPreview.start()
         
  
