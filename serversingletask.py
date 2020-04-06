@@ -326,7 +326,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         #cmd = self._ChangeImageSize(cam)
         handle = open(cmd, 'rb')
         return xmlrpc.client.Binary(handle.read())
-    ∂
+    
     def capture(self, cam, IsDetect=True):
         cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         os.system(cmd)
