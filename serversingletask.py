@@ -319,14 +319,14 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         filename = "/tmp/ramdisk/compressimage_%d.jpg" % index
         cv2.imwrite(filename, img, [cv2.IMWRITE_JPEG_QUALITY, 30]) 
         return filename
-        
+    '''        
 
     def imageDownload(self, cam, IsDetect=True):
-        #cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam
-        cmd = self._ChangeImageSize(cam)
+        cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam
+        #cmd = self._ChangeImageSize(cam)
         handle = open(cmd, 'rb')
         return xmlrpc.client.Binary(handle.read())
-    '''
+    ∂
     def capture(self, cam, IsDetect=True):
         cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         os.system(cmd)

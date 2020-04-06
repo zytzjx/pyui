@@ -153,8 +153,8 @@ class UISettings(QDialog):
 
         self.config=settings.DEFAULTCONFIG
 
-        #self.serialThread = StatusCheckThread()
-        #self.serialThread.signal.connect(self.StatusChange)
+        self.serialThread = StatusCheckThread()
+        self.serialThread.signal.connect(self.StatusChange)
  
         self.threadPreview=None
         #self.imageResults=[0]*3
@@ -398,24 +398,6 @@ class UISettings(QDialog):
         else:
             self.OnPreview()
     
-    def _loadprofileimages(self):
-        if not self.checkBox.isChecked():
-            profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-            #self.clientleft.profilepath(self.config["profilepath"], profilename)
-            #self.clientright.profilepath(self.config["profilepath"], profilename)
-            pathleft = os.path.join(self.config["profilepath"], profilename, "left")
-            pathtop = os.path.join(self.config["profilepath"], profilename, "top")
-            pathright = os.path.join(self.config["profilepath"], profilename, "right")
-            self.profileimages[0]=os.path.join(pathtop,  profilename+".jpg")
-            self.profileimages[1]=os.path.join(pathleft,  profilename+".jpg")
-            self.profileimages[2]=os.path.join(pathright,  profilename+".jpg")
-            self.imageTop.setImageScale()
-            self.imageTop.imagepixmap = QPixmap(self.profileimages[0])
-            self.imageLeft.setImageScale()
-            self.imageLeft.imagepixmap = QPixmap(self.profileimages[1])
-            self.imageRight.setImageScale()
-            self.imageRight.imagepixmap = QPixmap(self.profileimages[2])
-
     def _DirSub(self, argument):
         switcher = {
             1: "left",
@@ -544,12 +526,18 @@ class UISettings(QDialog):
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
         self.stop_prv.set() 
         profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        #self.clientleft.profilepath(self.config["profilepath"], profilename)
-        #self.clientright.profilepath(self.config["profilepath"], profilename)
+        self.clientleft.profilepath(self.config["profilepath"], profilename)
+        self.clientright.profilepath(self.config["profilepath"], profilename)        
         self._profilepath = os.path.join(self.config["profilepath"], profilename)
         pathleft = os.path.join(self.config["profilepath"], profilename, "left")
         pathtop = os.path.join(self.config["profilepath"], profilename, "top")
         pathright = os.path.join(self.config["profilepath"], profilename, "right")
+        if self.checkBox.isChecked():
+            mode = 0o777
+            os.makedirs(pathleft, mode, True) 
+            os.makedirs(pathtop, mode, True) 
+            os.makedirs(pathright, mode, True) 
+            
         self.profileimages[0]=os.path.join(pathtop,  profilename+".jpg")
         self.profileimages[1]=os.path.join(pathleft,  profilename+".jpg")
         self.profileimages[2]=os.path.join(pathright,  profilename+".jpg")
@@ -564,7 +552,6 @@ class UISettings(QDialog):
         p.join()
         pLeft.join()
         pRight.join()
-        #Process(target=self._loadprofileimages).start()
         if not self.checkBox.isChecked():
             status, status1, status2 = 0, 0, 0
             self.takepic.wait()
@@ -620,7 +607,7 @@ class UISettings(QDialog):
         window.tabWidget.setCurrentIndex(2)
         time.sleep(0.1)
         window.tabWidget.setCurrentIndex(0)
-        #self.serialThread.start()
+        self.serialThread.start()
         self.imageTop.setImageScale() 
         self.imageLeft.setImageScale() 
         self.imageRight.setImageScale() 
