@@ -151,8 +151,8 @@ class UISettings(QDialog):
 
         self.config=settings.DEFAULTCONFIG
 
-        self.serialThread = StatusCheckThread()
-        self.serialThread.signal.connect(self.StatusChange)
+        #self.serialThread = StatusCheckThread()
+        #self.serialThread.signal.connect(self.StatusChange)
  
         self.threadPreview=None
         #self.imageResults=[0]*3
@@ -317,6 +317,8 @@ class UISettings(QDialog):
             self.imageLeft.isProfile = False
             self.imageRight.isProfile = False
             self.leProfile.hide()
+            cmd='rsync -avz -e ssh pi@%s:/home/pi/Desktop/pyUI/profiles/  /home/pi/Desktop/pyUI/profiles/' % myconstdef.IP
+            os.system(cmd)
             self.comboBox.show()
     '''
     def takephotoshow(self, cameraindex, picname, profilename):
@@ -569,7 +571,7 @@ class UISettings(QDialog):
         window.tabWidget.setCurrentIndex(2)
         time.sleep(0.1)
         window.tabWidget.setCurrentIndex(0)
-        self.serialThread.start()
+        #self.serialThread.start()
 
 
     def OnPreview(self):
