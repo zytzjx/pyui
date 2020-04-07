@@ -13,7 +13,7 @@ Environment=DISPLAY=:0.0
 Type=simple
 User=pi
 Restart=always
-ExecStart=/usr/bin/python3.7 /home/pi/Desktop/pyUI/servertask.py > /tmp/ramdisk/PSIservice.log 2>&1
+ExecStart=/usr/bin/python3.7 /home/pi/Desktop/pyUI/serversingletask.py > /tmp/ramdisk/PSIservice.log 2>&1
 
 [Install]
 WantedBy=graphical.target
