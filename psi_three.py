@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 import sys
 import os
 import io
@@ -18,6 +18,7 @@ import ImageLabel
 import json
 import threading
 from datetime import datetime
+import shutil
 
 from  serialstatus import FDProtocol
 import serial
@@ -107,13 +108,14 @@ class UISettings(QDialog):
     resized = pyqtSignal()
     def __init__(self, parent=None):
         super(UISettings, self).__init__()
-        loadUi('psi_auto.ui', self)
+        loadUi('/home/pi/Desktop/pyUI/psi_auto.ui', self)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.changeStyle('Fusion')
         self.pbClose.clicked.connect(self.closeEvent)
         self.pbImageChange.clicked.connect(self.on_click)
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
+        self.config=settings.DEFAULTCONFIG
         self.updateProfile()
         #self.resized.connect(self.someFunction)
         self.pbSetting.clicked.connect(self.on_settingclick)
@@ -151,8 +153,6 @@ class UISettings(QDialog):
             border-bottom-left-radius:10px;
         }''')
 
-        self.config=settings.DEFAULTCONFIG
-
         self.serialThread = StatusCheckThread()
         self.serialThread.signal.connect(self.StatusChange)
  
@@ -162,6 +162,7 @@ class UISettings(QDialog):
         self.imageresults = []
         self.yanthread=None
         self._profilepath=""
+        self.profilename=""
 
     def StatusChange(self, value):
         self.takelock.acquire()
@@ -234,6 +235,8 @@ class UISettings(QDialog):
 
         self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
+        self.imageLeft.setServerProxy(self.clientleft)
+        self.imageRight.setServerProxy(self.clientright)
 
     def closeEvent(self, event):
         self.stop_prv.set()
@@ -248,9 +251,6 @@ class UISettings(QDialog):
         self.resized.emit()
         return super(UISettings, self).resizeEvent(event)
 
-    '''def someFunction(self):
-        logging.info(str(self.width())+"X"+str(self.height()))   '''
-
     def changeStyle(self, styleName):
         QApplication.setStyle(QStyleFactory.create(styleName))
         QApplication.setPalette(QApplication.style().standardPalette())
@@ -258,16 +258,8 @@ class UISettings(QDialog):
     def updateProfile(self):
         self.createprofiledirstruct("")
         self._profilepath=self.config["profilepath"]
-        #client = ServerProxy("http://localhost:8888", allow_none=True)
-        #self.comboBox.addItems(self.client.updateProfile(fpath))
         self.comboBox.addItems([name for name in os.listdir(self._profilepath) if os.path.isdir(os.path.join(self._profilepath, name))])
-        #self.comboBox.addItems(fpath)
-        #self.clientleft.updateProfile(fpath)
-        #self.clientright.updateProfile(fpath)
-        self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config else 0)
-        #curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
-        #profilepath=os.path.join(curpath,"profiles")
-        #self.comboBox.addItems([name for name in os.listdir(profilepath) if os.path.isdir(os.path.join(profilepath, name))])
+        self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
 
     @staticmethod
     def createSShServer():
@@ -279,7 +271,7 @@ class UISettings(QDialog):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(hostname=myconstdef.IP, username='pi', password=myconstdef.PSSWORD, look_for_keys=False)
 
-        stdin, stdout, stderr = ssh.exec_command('DISPLAY=:0.0 python3 ~/Desktop/pyUI/servertask.py')
+        stdin, stdout, stderr = ssh.exec_command('DISPLAY=:0.0 python3 ~/Desktop/pyUI/serversingletask.py &')
         bErrOut = True
         
         for line in stdout.read().splitlines():
@@ -304,6 +296,9 @@ class UISettings(QDialog):
             camera.ISO = 50
             camera.resolution=(640,480)
             for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
+                if self.stop_prv.is_set():
+                    self.stop_prv.clear()
+                    break
                 stream.truncate()
                 stream.seek(0)
                 image = Image.open(stream)
@@ -337,7 +332,17 @@ class UISettings(QDialog):
             self.imageLeft.isProfile = False
             self.imageRight.isProfile = False
             self.leProfile.hide()
+            self.comboBox.clear() 
+            self.comboBox.addItems([name for name in os.listdir(self.config["profilepath"]) if os.path.isdir(os.path.join(self.config["profilepath"], name))])
+            self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
             self.comboBox.show()
+            tl = threading.Thread(target=self.runsyncprofiles, args=(True,))
+            tl.start()
+            tr = threading.Thread(target=self.runsyncprofiles, args=(False,))
+            tr.start()
+            tl.join()
+            tr.join()
+
     '''
     def takephotoshow(self, cameraindex, picname, profilename):
         #self.takephoto           
@@ -406,8 +411,17 @@ class UISettings(QDialog):
         }
         return switcher.get(argument, "Invalid")
 
+    def runsyncprofiles(self, isLeft):
+        ip = myconstdef.IP_LEFT
+        if not isLeft:
+            ip = myconstdef.IP_RIGHT
+        
+        cmd = 'rsync -avz -e ssh pi@{0}:{1}/ {1}/'.format(ip, self.config["profilepath"])
+        os.system(cmd)
+
     def capture(self, cam, IsDetect=True):
         cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        print(cmd)
         os.system(cmd)
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
@@ -415,10 +429,10 @@ class UISettings(QDialog):
             self._startdetectthread(cam)
 
     def _callyanfunction(self, index):
-        profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        print('callyanfunction:' + profilename)
-        txtfilename=os.path.join(self._profilepath, self._DirSub(index), profilename+".txt")
-        smplfilename=os.path.join(self._profilepath, self._DirSub(index), profilename+".jpg")
+        self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+        print('callyanfunction:' + self.profilename)
+        txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
+        smplfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg")
         logging.info(txtfilename)
         logging.info(smplfilename)
         if os.path.exists(txtfilename) and os.path.exists(smplfilename):
@@ -455,6 +469,7 @@ class UISettings(QDialog):
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
         if self.checkBox.isChecked():
             if index==0:
+                imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index)#pixmap
             else:
                 data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
@@ -516,6 +531,20 @@ class UISettings(QDialog):
         print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera A and transfer")
         self.takepic.set()
 
+    def testScrewResult(self, data):
+        ret = 0
+        for itemscrew in data:
+            if itemscrew[0] == np.nan or itemscrew[0] < 0.35:
+                ret = 2
+                break
+            elif itemscrew[0] >= 0.45:
+                pass
+            else:
+                if ret != 2:
+                    ret= 1 
+
+        return ret
+
     @pyqtSlot()
     def on_startclick(self):
         if self.leProfile.text()=="" and self.checkBox.isChecked():
@@ -523,25 +552,27 @@ class UISettings(QDialog):
             error_dialog.showMessage('Oh no! Profile name is empty.') 
             return             
         
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
         self.stop_prv.set() 
-        profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        self.clientleft.profilepath(self.config["profilepath"], profilename)
-        self.clientright.profilepath(self.config["profilepath"], profilename)        
-        self._profilepath = os.path.join(self.config["profilepath"], profilename)
-        pathleft = os.path.join(self.config["profilepath"], profilename, "left")
-        pathtop = os.path.join(self.config["profilepath"], profilename, "top")
-        pathright = os.path.join(self.config["profilepath"], profilename, "right")
+        self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+        self.clientleft.profilepath(self.config["profilepath"], self.profilename)
+        self.clientright.profilepath(self.config["profilepath"], self.profilename)        
+        self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
+        pathleft = os.path.join(self.config["profilepath"], self.profilename, "left")
+        pathtop = os.path.join(self.config["profilepath"], self.profilename, "top")
+        pathright = os.path.join(self.config["profilepath"], self.profilename, "right")
         if self.checkBox.isChecked():
             mode = 0o777
             os.makedirs(pathleft, mode, True) 
             os.makedirs(pathtop, mode, True) 
             os.makedirs(pathright, mode, True) 
             
-        self.profileimages[0]=os.path.join(pathtop,  profilename+".jpg")
-        self.profileimages[1]=os.path.join(pathleft,  profilename+".jpg")
-        self.profileimages[2]=os.path.join(pathright,  profilename+".jpg")
+        self.profileimages[0]=os.path.join(pathtop,  self.profilename+".jpg")
+        self.profileimages[1]=os.path.join(pathleft,  self.profilename+".jpg")
+        self.profileimages[2]=os.path.join(pathright,  self.profilename+".jpg")
+        if self.stop_prv.is_set():
+            time.sleep(0.2)  
 
+        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
 
         p = threading.Thread(target=self._ThreadTakepicture)
         p.start()
@@ -559,12 +590,14 @@ class UISettings(QDialog):
             try:
                 print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
                 status = self.imageTop.DrawImageResults(self.imageresults, None )
-                data = json.loads(self.client.ResultTest(1))
+                data = json.loads(self.clientleft.ResultTest(1))
                 if len(data)>0:
-                    status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
-                data = json.loads(self.client.ResultTest(2))
+                    status1 = self.testScrewResult(data)
+                    #status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
+                data = json.loads(self.clientright.ResultTest(2))
                 if len(data)>0:
-                    status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
+                    status2 = self.testScrewResult(data)
+                    #status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
                 print(datetime.now().strftime("%H:%M:%S.%f"),"End Draw Info")
             except :
                 status = 5
