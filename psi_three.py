@@ -574,12 +574,12 @@ class UISettings(QDialog):
 
         print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
 
-        p = threading.Thread(target=self._ThreadTakepicture)
-        p.start()
         pLeft = threading.Thread(target=self._ThreadTakepictureLeft)
         pLeft.start()
         pRight = threading.Thread(target=self._ThreadTakepictureRight)
         pRight.start()
+        p = threading.Thread(target=self._ThreadTakepicture)
+        p.start()
         p.join()
         pLeft.join()
         pRight.join()
@@ -589,6 +589,7 @@ class UISettings(QDialog):
             self.takepic.clear()
             try:
                 print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
+                #self.imageresults=[[0.4111,[604, 652, 522, 570]],]
                 status = self.imageTop.DrawImageResults(self.imageresults, None )
                 data = json.loads(self.clientleft.ResultTest(1))
                 if len(data)>0:
@@ -609,7 +610,7 @@ class UISettings(QDialog):
                 color: green
                 ''')
             elif status==1:
-                self.lblStatus.setText("finish")
+                self.lblStatus.setText("warning")
                 self.lblStatus.setStyleSheet('''
                 color: yellow
                 ''')

@@ -328,12 +328,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return xmlrpc.client.Binary(handle.read())
     
     def capture(self, cam, IsDetect=True):
-        cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        cmd = "raspistill -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        if cam ==0:
+            cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         os.system(cmd)
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
         else:
-            self._startdetectthread(cam)
+            #self._startdetectthread(cam)
+            self._callyanfunction(cam)
 
     #@pyjsonrpc.rpcmethod
     def TakePicture(self, index, IsDetect=True):
@@ -351,8 +354,8 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         #        st.join()
 
         #self.yanthreads=[]
-        if self.yanthreads[index].isAlive():
-            self.yanthreads[index].join()
+        #if self.yanthreads[index].isAlive():
+        #    self.yanthreads[index].join()
         data=[]     
         if index<3:
             data = self.imageresults[index]
