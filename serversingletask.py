@@ -50,7 +50,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self.image_ready = io.BytesIO()
         self.lockyan=threading.Lock()
         self.yanthreads=[]
-        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self._config={}
         self._tpreview =None
         self.IsPreviewing=False
@@ -61,7 +61,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _setactivecamera(self, index=0):
         if index==0:
-            print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing the camera A")
+            logging.info("Start testing the camera A")
             #i2c = "i2cset -y 1 0x70 0x00 0x04"
             #os.system(i2c)
             #gp.output(7, False)
@@ -123,15 +123,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def startpause(self, pause=True):
         if pause and self.IsPreviewing:
-            print("pause:True, IsPreviewing:True")
+            logging.info("pause:True, IsPreviewing:True")
             self.pause_event.set()
         elif not pause and not self.IsPreviewing:
-            print("pause:False, IsPreviewing:False")
+            logging.info("pause:False, IsPreviewing:False")
             self.pause_event.set()
             while not self.IsPreviewing:
                 time.sleep(0.01)
         else:
-            print(str(pause)+":"+str(self.IsPreviewing))
+            logging.info(str(pause)+":"+str(self.IsPreviewing))
             pass
         return "OK"
 
@@ -175,20 +175,20 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def SyncRamdisks(self):
     #rsync -avzP --delete pi@192.168.1.12:/home/pi/Desktop/pyUI/profiles /home/pi/Desktop/pyui/profiles/
-        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync++")
+        logging.info("call rsync++")
         subprocess.call(["rsync", "-avzP", '--delete', '/tmp/ramdisk/', "pi@192.168.1.16:/tmp/ramdisk"])
         logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync--")
 
 
     def _callyanfunction(self, index):
-        print('callyanfunction:' +self.profilename)
+        logging.info('callyanfunction:' +self.profilename)
         txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
         smplfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg")
         logging.info(txtfilename)
         logging.info(smplfilename)
         if os.path.exists(txtfilename) and os.path.exists(smplfilename):
             self.lockyan.acquire()
-            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   *testScrews**")
+            logging.info("*testScrews**")
             try:
                 dataresult = testScrew.testScrews(
                     txtfilename, 
@@ -199,9 +199,9 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
                 self.imageresults[index] = []
                 pass
             
-            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   -testScrews end--")
+            logging.info("-testScrews end--")
             self.lockyan.release()
-            print(self.imageresults[index])
+            logging.info(self.imageresults[index])
 
     def _startdetectthread(self, index):
         t1 = threading.Thread(target=self._callyanfunction, args=(index,))
@@ -341,11 +341,11 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     #@pyjsonrpc.rpcmethod
     def TakePicture(self, index, IsDetect=True):
         if index==0:
-            print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing the camera A")
+            logging.info("Start testing the camera A")
         elif index == 1:
-            print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing the camera B")
+            logging.info("Start testing the camera B")
         else:
-            print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing the camera C")
+            logging.info("Start testing the camera C")
         return self.capture(index, IsDetect)
 
     def ResultTest(self, index):  
@@ -360,7 +360,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         if index<3:
             data = self.imageresults[index]
         ss = json.dumps(data)
-        print(ss)
+        logging.info(ss)
         return ss
 
     def _StartDaemon(self):

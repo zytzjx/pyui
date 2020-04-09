@@ -17,6 +17,7 @@ from settings import Settings
 import ImageLabel
 import json
 import threading
+from multiprocessing import Process
 from datetime import datetime
 import shutil
 
@@ -336,9 +337,9 @@ class UISettings(QDialog):
             self.comboBox.addItems([name for name in os.listdir(self.config["profilepath"]) if os.path.isdir(os.path.join(self.config["profilepath"], name))])
             self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
             self.comboBox.show()
-            tl = threading.Thread(target=self.runsyncprofiles, args=(True,))
+            tl = Process(target=self.runsyncprofiles, args=(True,))
             tl.start()
-            tr = threading.Thread(target=self.runsyncprofiles, args=(False,))
+            tr = Process(target=self.runsyncprofiles, args=(False,))
             tr.start()
             tl.join()
             tr.join()
@@ -421,23 +422,22 @@ class UISettings(QDialog):
 
     def capture(self, cam, IsDetect=True):
         cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
-        print(cmd)
+        logging.info(cmd)
         os.system(cmd)
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
         else:
-            self._startdetectthread(cam)
+            self._callyanfunction(cam)
 
     def _callyanfunction(self, index):
         self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        print('callyanfunction:' + self.profilename)
+        logging.info('callyanfunction:' + self.profilename)
         txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
         smplfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg")
         logging.info(txtfilename)
         logging.info(smplfilename)
         if os.path.exists(txtfilename) and os.path.exists(smplfilename):
-            #self.lockyan.acquire()
-            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   *testScrews**")
+            logging.info("*testScrews**")
             try:
                 self.imageresults = testScrew.testScrews(
                     txtfilename, 
@@ -447,18 +447,17 @@ class UISettings(QDialog):
                 self.imageresults = []
                 pass
             
-            logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   -testScrews end--")
-            #self.lockyan.release()
-            print(self.imageresults)
+            logging.info("-testScrews end--")
+            logging.info(self.imageresults)
 
     def _startdetectthread(self, index):
-        self.yanthread = threading.Thread(target=self._callyanfunction, args=(index,))
+        self.yanthread = Process(target=self._callyanfunction, args=(index,))
         self.yanthread.start()
         self.yanthread.join()
 
     def _showImage(self, index, imagelabel):
         imagelabel.setImageScale()     
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing %d" % index)
+        logging.info("Start testing %d" % index)
         if index==1:
             self.clientleft.TakePicture(index, not self.checkBox.isChecked()) 
         elif index==2:
@@ -466,14 +465,14 @@ class UISettings(QDialog):
         elif index == 0:
             self.capture(0, not self.checkBox.isChecked())
 
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start transfer %d" % index)
+        logging.info("Start transfer %d" % index)
         if self.checkBox.isChecked():
             if index==0:
                 imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index)#pixmap
             else:
                 data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
-                print(datetime.now().strftime("%H:%M:%S.%f"),"end testing %d" % index)
+                logging.info("end testing %d" % index)
                 image = Image.open(io.BytesIO(data))
                 image.save("/tmp/ramdisk/temp_%d.jpg" % index)
                 #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
@@ -499,19 +498,19 @@ class UISettings(QDialog):
         try:
             self._showImage(1, self.imageLeft)
         except Exception as ex:
-            print(str(ex))
+            logging.info(str(ex))
             status = 5
 
-        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera Left and transfer")
+        logging.info("ending camera Left and transfer")
 
     def _ThreadTakepictureRight(self):
         try:
             self._showImage(2, self.imageRight)
         except Exception as ex:
-            print(str(ex))
+            logging.info(str(ex))
             status = 5
 
-        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera right and transfer")
+        logging.info("ending camera right and transfer")
 
 
     def _ThreadTakepicture(self):
@@ -520,15 +519,13 @@ class UISettings(QDialog):
         self.takepic.clear()
         try:
             self._showImage(0, self.imageTop)
-            #self._showImage(1, self.imageLeft)
-            #self._showImage(2, self.imageRight)
         except Exception as ex:
-            print(str(ex))
+            logging.info(str(ex))
             status = 5
         #finally:
         #    self.takelock.release()
 
-        print(datetime.now().strftime("%H:%M:%S.%f"),"ending camera A and transfer")
+        logging.info("ending camera A and transfer")
         self.takepic.set()
 
     def testScrewResult(self, data):
@@ -544,6 +541,22 @@ class UISettings(QDialog):
                     ret= 1 
 
         return ret
+
+    def DrawResultTop(self):
+        self.imageTop.DrawImageResults(self.imageresults, None )
+
+    def DrawResultLeft(self):
+        data = json.loads(self.clientleft.ResultTest(1))
+        if len(data)>0:
+            #status1 = self.testScrewResult(data)
+            status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
+
+    def DrawResultRight(self):
+        data = json.loads(self.clientright.ResultTest(2))
+        if len(data)>0:
+            #status2 = self.testScrewResult(data)
+            status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
+
 
     @pyqtSlot()
     def on_startclick(self):
@@ -572,34 +585,50 @@ class UISettings(QDialog):
         if self.stop_prv.is_set():
             time.sleep(0.2)  
 
-        print(datetime.now().strftime("%H:%M:%S.%f"),"Start testing click")
+        logging.info("Start testing click")
 
-        pLeft = threading.Thread(target=self._ThreadTakepictureLeft)
-        pLeft.start()
-        pRight = threading.Thread(target=self._ThreadTakepictureRight)
-        pRight.start()
+        logging.info("Start testing t")
         p = threading.Thread(target=self._ThreadTakepicture)
         p.start()
+        pLeft = Process(target=self._ThreadTakepictureLeft)
+        pLeft.start()
+        pRight = Process(target=self._ThreadTakepictureRight)
+        pRight.start()
         p.join()
+        logging.info("Start end t")        
         pLeft.join()
+        logging.info("Start end left")        
         pRight.join()
+        logging.info("Start end right")        
         if not self.checkBox.isChecked():
             status, status1, status2 = 0, 0, 0
-            self.takepic.wait()
-            self.takepic.clear()
+            #self.takepic.wait()
+            #self.takepic.clear()
             try:
-                print(datetime.now().strftime("%H:%M:%S.%f"),"Start Draw Info")
-                #self.imageresults=[[0.4111,[604, 652, 522, 570]],]
-                status = self.imageTop.DrawImageResults(self.imageresults, None )
-                data = json.loads(self.clientleft.ResultTest(1))
-                if len(data)>0:
-                    status1 = self.testScrewResult(data)
-                    #status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
-                data = json.loads(self.clientright.ResultTest(2))
-                if len(data)>0:
-                    status2 = self.testScrewResult(data)
-                    #status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
-                print(datetime.now().strftime("%H:%M:%S.%f"),"End Draw Info")
+                logging.info("Start Draw Info")
+                
+                threads=[]
+                ttop = threading.Thread(target=self.DrawResultTop)
+                ttop.start()
+                threads.append(ttop)
+                logging.info("Draw top finish")
+                
+                tleft = threading.Thread(target=self.DrawResultLeft)
+                tleft.start()
+                threads.append(tleft)
+                logging.info("Draw left finish")
+
+                tright = threading.Thread(target=self.DrawResultRight)
+                tright.start()
+                threads.append(tright)
+                
+                for t in threads:
+                    t.join()
+                
+                status = self.imageTop.imagedresult
+                status1 = self.imageLeft.imagedresult
+                status2 = self.imageRight.imagedresult
+                logging.info("End Draw Info")
             except :
                 status = 5
 
@@ -620,7 +649,7 @@ class UISettings(QDialog):
                 color: red
                 ''')
 
-        print(datetime.now().strftime("%H:%M:%S.%f"),"task finished")
+        logging.info("task finished")
 
         return
 
@@ -654,7 +683,8 @@ class UISettings(QDialog):
         
  
 if __name__ == "__main__":
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)   
+    #%(threadName)s       %(thread)d
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s[%(thread)d] - %(levelname)s - %(message)s')
     app = QApplication(sys.argv)
     window = UISettings()
     

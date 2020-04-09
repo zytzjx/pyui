@@ -6,6 +6,7 @@ import profiledata
 import os
 import sys
 import enum
+from datetime import datetime
 from xmlrpc.client import ServerProxy
 import numpy as np
 import myconstdef
@@ -40,6 +41,7 @@ class ImageLabel(QLabel):
         self._indexscrew=0
         self.profilerootpath=os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])),"profiles")
         self._client = ServerProxy(myconstdef.URL, allow_none=True)
+        self.imagedresult=0
 
 
     def fileprechar(self, argument):
@@ -97,12 +99,9 @@ class ImageLabel(QLabel):
         self.imagel = (self.width() - self.pixmap().width())/2
         self.imaget = (self.height() - self.pixmap().height())/2
         logging.info("lblimage:"+str(self.pixmap().width())+"X"+str(self.pixmap().height()))
-        print(self.scalex)
-        print(self.scaley)
+        logging.info(self.scalex)
+        logging.info(self.scaley)
 
-    #def mouseMoveEvent(self, evt):
-    #    logging.info(str(evt.pos().x())+"=="+str(evt.pos().y())) 
-    #    print("On Hover") # event.pos().x(), event.pos().y()
 
     def mouseInImage(self, x, y):
         if self._imagepixmap == None:
@@ -113,19 +112,11 @@ class ImageLabel(QLabel):
         return False
 
     def _savescrew(self, pt):
-        x = pt.x()-self.screwW
-        if x < 0 :
-            x = 0
-        y = pt.y() - self.screwH
-        if y < 0 :
-            y = 0
-
-        x1 = pt.x()+self.screwW
-        if x1 > self._imagepixmapback.width() :
-            x1 = self._imagepixmapback.width()
-        y1 = pt.y() + self.screwH
-        if y1 > self._imagepixmapback.height() :
-            y1 = self._imagepixmapback.width()
+        x = pt.x()-self.screwW if pt.x()-self.screwW > 0 else 0
+        y = pt.y()-self.screwH if pt.y()-self.screwH > 0 else 0
+ 
+        x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
+        y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
         
         currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
         cropQPixmap = self._imagepixmapback.copy(currentQRect)
@@ -161,16 +152,18 @@ class ImageLabel(QLabel):
 
 
     def DrawImageResults(self, data, imagepic):
+        logging.info("DrawImageResults ++ " + str(self._camerapoisition))
         ret=0
+        self.imagedresult = ret
         if imagepic is not None:
             self._imagepixmap = imagepic
         if self._imagepixmap == None or len(data)==0:
+            self.imagedresult = ret
             return ret
-
+        logging.info(data)
         painterInstance = QPainter(self._imagepixmap)
         penRectangle = QPen(Qt.red)
         penRectangle.setWidth(12)
-        painterInstance.setPen(penRectangle)
 
         for itemscrew in data:
             location = itemscrew[1]
@@ -184,11 +177,13 @@ class ImageLabel(QLabel):
                     ret= 1 
                 penRectangle.setColor(Qt.yellow)
 
+            painterInstance.setPen(penRectangle)
             painterInstance.drawRect(QRect(QPoint(location[0], location[2]),QPoint(location[1], location[3])))
 
         self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
         painterInstance.end()
-
+        self.imagedresult = ret
+        logging.info("DrawImageResults -- ")
         return ret
 
     def DrawImageResult(self, location, clr = Qt.red):
@@ -236,22 +231,23 @@ class ImageLabel(QLabel):
             self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
             painterInstance.end()
         except Exception as ex:
-            print(str(ex))
+            logging.info(str(ex))
             pass
-        #self._savescrew(QPoint(x * self.scalex, y*self.scaley))
-        self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
+
+        #self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
+        if self._camerapoisition == CAMERA.TOP:
+            self._savescrew(QPoint(x * self.scalex, y*self.scaley))
+        else:
+            self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
 
     def mousePressEvent(self, evt):
         logging.info("mousepress:"+str(evt.pos().x())+"=>"+str(evt.pos().y())) 
-        #print(evt)
         if self.mouseInImage(evt.pos().x(), evt.pos().y()):
             self.DrawImage(evt.pos().x()-self.imagel, evt.pos().y()-self.imaget)
 
 
     def enterEvent(self, event):
         QApplication.setOverrideCursor(self.CURSOR_NEW)
-        #print("hovered")
 
     def leaveEvent(self, event):
         QApplication.setOverrideCursor(self.CUR_CUESOR)
-        #print("left")
