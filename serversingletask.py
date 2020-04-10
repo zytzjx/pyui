@@ -368,6 +368,21 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             self._tpreview = threading.Thread(target=self._preview, daemon=True)
             self._tpreview.start()
 
+    def RemoveProfile(self, profile):
+        dirPath=os.path.join(self.rootprofielpath, profile)
+        try:
+            shutil.rmtree(dirPath)
+        except:
+            logging.error('Error while deleting directory')  
+
+    def RenameProfile(self, source, target):
+        dirPath=os.path.join(self.rootprofielpath, source)
+        dirPath1=os.path.join(self.rootprofielpath, target)
+        try:
+            os.rename(dirPath, dirPath1)
+        except:
+            logging.error('Error  renaming directory')  
+
 
 if __name__ == '__main__':
     app = QApplication([])

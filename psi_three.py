@@ -75,16 +75,20 @@ class StatusCheckThread(QThread):
         QThread.__init__(self)
         self.serialport = "/dev/ttyUSB0"
         self.exit_event = threading.Event()
+        self.threhold = 8000
 
+    def setThrehold(self, value):
+        self.threhold = value
     # run method gets called when we start the thread
     def run(self):
-        ser = serial.serial_for_url('alt://{}'.format(self.serialport), baudrate=9600, timeout=1)
+        ser = serial.serial_for_url('alt://{}'.format(self.serialport), baudrate=115200, timeout=1)
     #ser = serial.Serial('/dev/ttyUSB0', baudrate=9600, timeout=1)
         status=-1
         oldstatus=-1
         with serial.threaded.ReaderThread(ser, FDProtocol) as statusser:
             while not self.exit_event.is_set():
-                if statusser.proximityStatus and not statusser.ultraSonicStatus:
+                statusser.setProxThreshold(self.threhold)
+                if statusser.proximityStatus and statusser.laserStatus:
                     if status!=1:
                         status=1
                         #do task start
@@ -92,7 +96,7 @@ class StatusCheckThread(QThread):
                     if status!=2:
                         status=2
                         #start preview
-                elif statusser.ultraSonicStatus:
+                elif not statusser.laserStatus:
                     if status != 3:
                         status = 3
                 if oldstatus!=status:
@@ -116,6 +120,7 @@ class UISettings(QDialog):
         self.pbImageChange.clicked.connect(self.on_click)
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
+        self.serialThread = StatusCheckThread()
         self.config=settings.DEFAULTCONFIG
         self.updateProfile()
         #self.resized.connect(self.someFunction)
@@ -154,7 +159,6 @@ class UISettings(QDialog):
             border-bottom-left-radius:10px;
         }''')
 
-        self.serialThread = StatusCheckThread()
         self.serialThread.signal.connect(self.StatusChange)
  
         self.threadPreview=None
@@ -229,11 +233,15 @@ class UISettings(QDialog):
         with open('config.json', 'w') as json_file:
             json.dump(self.config, json_file, indent=4)
 
-    def createprofiledirstruct(self, profiename):
+    def _loadConfigFile(self):
         if os.path.isfile('config.json'):
             with open('config.json') as json_file:
                 self.config = json.load(json_file)
+        self.serialThread.setThrehold(self.config["threhold"] if 'threhold' in self.config else 20000)
 
+
+    def createprofiledirstruct(self, profiename):
+        self._loadConfigFile()
         self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
         self.imageLeft.setServerProxy(self.clientleft)
@@ -344,38 +352,6 @@ class UISettings(QDialog):
             tl.join()
             tr.join()
 
-    '''
-    def takephotoshow(self, cameraindex, picname, profilename):
-        #self.takephoto           
-
-        if ImageLabel.CAMERA.TOP==cameraindex:
-            self.imageTop.profilerootpath = self.config["profilepath"]
-            self.imageTop.setImageScale()
-            self.imageTop.SetProfile(profilename, "top.jpg")
-            self.pixmap = QPixmap(picname)
-            logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
-            self.imageTop.imagepixmap = self.pixmap
-            self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
-            #self.imageTop.SetProfile("iphone6s_top_1","iphone6s_top_1.jpg")
-        elif ImageLabel.CAMERA.LEFT==cameraindex:
-            self.imageLeft.profilerootpath = self.config["profilepath"]
-            self.imageLeft.setImageScale()
-            self.imageLeft.SetProfile(profilename, "left.jpg")
-            self.pixmap = QPixmap(picname)
-            logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
-            self.imageLeft.imagepixmap = self.pixmap
-            self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
-            #self.imageTop.SetProfile("iphone6s_top_2","iphone6s_top_2.jpg")
-        else:
-            self.imageRight.profilerootpath = self.config["profilepath"]
-            self.imageRight.setImageScale()
-            self.imageRight.SetProfile(profilename, "right.jpg")
-            self.pixmap = QPixmap(picname)
-            logging.info(str(self.pixmap.width())+"X"+str(self.pixmap.height()))
-            self.imageRight.imagepixmap = self.pixmap
-            self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
-    '''
-
     @pyqtSlot()
     def on_CameraChange(self):
         return
@@ -387,8 +363,9 @@ class UISettings(QDialog):
 
     @pyqtSlot()
     def on_settingclick(self):
-        dlg = Settings(self)
+        dlg = Settings(self, self.clientleft, self.clientright)
         if dlg.exec_():
+            self._loadConfigFile()
             print("Success!")
         else:
             print("Cancel!")  

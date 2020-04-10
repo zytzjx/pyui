@@ -25,10 +25,14 @@ class FDProtocol(serial.threaded.LineReader):
         self._event_thread.name = 'status-event'
         self._event_thread.start()
         self.lock = threading.Lock()
-        self.ultraSonic = threading.Event()
-        self.ultraSonicStatus = False
+        self.laser = threading.Event()
+        self.laserStatus = False
         self.proximity = threading.Event()
         self.proximityStatus = False
+        self.proximityThreshold = 20000
+
+    def setProxThreshold(self, value):
+        self.proximityThreshold = value
 
     def stop(self):
         """
@@ -56,29 +60,20 @@ class FDProtocol(serial.threaded.LineReader):
         """
         m = re.search(r'^(.*?):[ ]?(\d+)$', line)
         if m:
-            #self.events.put(line)
-            #if m.group(1)=="Ambient":
-            #    if int(m.group(2))<5:
-            #        self.ultraSonic.set()
-            #        self.ultraSonicStatus = False
-            #        print("Am less 5\n")
             if m.group(1) =="Proximity":
-                #print(line)
-                if int(m.group(2))<8000:
+                if int(m.group(2)) < self.proximityThreshold:
                     self.proximity.set()
                     self.proximityStatus = False
-                    #print("Proximity is %s\n" % m.group(2))
                 else:
                     self.proximity.clear()
                     self.proximityStatus = True
-            elif m.group(1) == "Distance":
-                if int(m.group(2)) > 600:
-                    self.ultraSonic.set()
-                    self.ultraSonicStatus = False
-                    #print("Distance is %s\n" % m.group(2))
+            elif m.group(1) == "Laser":
+                if int(m.group(2)) == 0:
+                    self.laser.set()
+                    self.laserStatus = False
                 else:
-                    self.ultraSonic.clear()
-                    self.ultraSonicStatus = True
+                    self.laser.clear()
+                    self.laserStatus = True
 
     def handle_event(self, event):
         """
@@ -94,7 +89,7 @@ class FDProtocol(serial.threaded.LineReader):
             self.write_line(command)
 
 if __name__ == '__main__':
-    ser = serial.serial_for_url('alt:///dev/ttyUSB0', baudrate=9600, timeout=1)
+    ser = serial.serial_for_url('alt:///dev/ttyUSB0', baudrate=115200, timeout=1)
     #ser = serial.Serial('/dev/ttyUSB0', baudrate=9600, timeout=1)
     with serial.threaded.ReaderThread(ser, FDProtocol) as statusser:
         
