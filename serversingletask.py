@@ -395,7 +395,8 @@ if __name__ == '__main__':
     server = ThreadXMLRPCServer(('0.0.0.0', 8888), allow_none=True) # 初始化
     handler = RequestHandler()
     server.register_instance(handler)
-    handler.StartDaemon()
+    if args["style"] == 'top':
+        handler.StartDaemon()
     print ("Listening for Client")
     try:
         server.serve_forever()
