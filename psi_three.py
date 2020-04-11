@@ -327,6 +327,21 @@ class UISettings(QDialog):
         self.stop_prv.clear()
         logging.info("preview: thread ending...")
 
+    def _GetImageShow(self):
+        self.imageTop.setImageScale() 
+        logging.info(self.clientleft.startpause(False))
+        while True:
+            data = self.clientleft.preview().data
+            image = Image.open(io.BytesIO(data))
+            imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+            pixmap = QPixmap.fromImage(imageq)
+            #self.imageTop.imagepixmap = pixmap
+            self.imageTop.ShowPreImage(pixmap)
+            if self.previewEvent.is_set():
+                self.previewEvent.clear()
+                self.clientleft.startpause(True)
+                break
+
 
     @pyqtSlot()
     def btnstate(self):
@@ -655,7 +670,7 @@ class UISettings(QDialog):
 
     def OnPreview(self):
         if self.threadPreview==None or not self.threadPreview.is_alive():
-            self.threadPreview= threading.Thread(target=self.PreviewCamera)
+            self.threadPreview= threading.Thread(target=self._GetImageShow)#self.PreviewCamera)
             self.threadPreview.start()
         
  

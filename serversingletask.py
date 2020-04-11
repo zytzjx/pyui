@@ -22,6 +22,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEven
  
 import profiledata
 import testScrew
+import argparse
 
 import json
 import subprocess
@@ -363,7 +364,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         logging.info(ss)
         return ss
 
-    def _StartDaemon(self):
+    def StartDaemon(self):
         if self._tpreview is None or not self._tpreview.is_alive():
             self._tpreview = threading.Thread(target=self._preview, daemon=True)
             self._tpreview.start()
@@ -386,9 +387,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
 if __name__ == '__main__':
     app = QApplication([])
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-style", "-style which camera[top left right]", type=str, required=True,
+    	help="which camera")
+    args = vars(ap.parse_args())
+
     server = ThreadXMLRPCServer(('0.0.0.0', 8888), allow_none=True) # 初始化
     handler = RequestHandler()
     server.register_instance(handler)
+    handler.StartDaemon()
     print ("Listening for Client")
     try:
         server.serve_forever()
