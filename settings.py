@@ -95,17 +95,18 @@ class Settings(QDialog):
             self.data["profilepath"] = fname
 
 
-    def apply(self):
+    def _savedata(self):
         self.data['cw'] = int(self.leWidth.text())
         self.data['ch'] = int(self.leHeight.text())
         self.data['threhold'] = self.sbPromixity.value
+        self.data['preview'] = self.cbPreview.isChecked()
         with open('config.json', 'w') as outfile:
             json.dump(self.data, outfile)
 
+    def apply(self):
+        self._savedata()
+
+
     def save(self):
-        self.data['cw'] = int(self.leWidth.text())
-        self.data['ch'] = int(self.leHeight.text())
-        self.data['threhold'] = self.sbPromixity.value
-        with open('config.json', 'w') as outfile:
-            json.dump(self.data, outfile)
+        self._savedata()
         self.accept()

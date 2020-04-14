@@ -247,7 +247,7 @@ class UISettings(QDialog):
         self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
         #self.imageLeft.setServerProxy(self.clientleft)
-        self.imageLeft.setServerProxy(self.clienttop)
+        self.imageTop.setServerProxy(self.clienttop)
         self.imageRight.setServerProxy(self.clientright)
 
     def closeEvent(self, event):
@@ -484,7 +484,7 @@ class UISettings(QDialog):
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
         else:
             imagelabel.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
-            if index==0:
+            if index==1:
                 imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index))
             else:
                 pass
@@ -690,6 +690,9 @@ class UISettings(QDialog):
 
 
     def OnPreview(self):
+        allowpreview = self.config["preview"] if 'preview' in self.config else True
+        if not allowpreview:
+            return
         if self.threadPreview==None or not self.threadPreview.is_alive():
             self.threadPreview= threading.Thread(target=self._GetImageShow)#self.PreviewCamera)
             self.threadPreview.start()
