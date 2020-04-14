@@ -147,13 +147,9 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self._curIndex=0
         self._indexscrew = 0
 
-    #@pyjsonrpc.rpcmethod
-    def add(self, a, b):
-        """Test method"""
-        return a + b
-
     def profilepath(self, rpp, pn):
         #global profilename, _profilepath
+        logging.info("call profilepath ++")
         if rpp and rpp!="":
             self.rootprofielpath=rpp
         if pn and pn!="":
@@ -164,10 +160,13 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         pathtop = os.path.join(self._profilepath, "top")
         pathright = os.path.join(self._profilepath, "right")
         mode = 0o777
-        os.makedirs(pathleft, mode, True) 
-        os.makedirs(pathtop, mode, True) 
-        os.makedirs(pathright, mode, True) 
-
+        if not os.path.exists(pathleft):
+            os.makedirs(pathleft, mode, True) 
+        if not os.path.exists(pathtop):
+            os.makedirs(pathtop, mode, True) 
+        if not os.path.exists(pathright):
+            os.makedirs(pathright, mode, True) 
+        logging.info("call profilepath -- " + self._profilepath)
         return self._profilepath
 
     def CloseServer(self):

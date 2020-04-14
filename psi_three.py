@@ -138,7 +138,8 @@ class UISettings(QDialog):
         self.takepic=threading.Event()
         self.stop_prv = threading.Event()
         self.startKey =False
-        self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
+        #self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
+        self.clienttop = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
         self.setStyleSheet('''
         QPushButton{background-color:rgba(255,178,0,50%);
@@ -242,9 +243,11 @@ class UISettings(QDialog):
 
     def createprofiledirstruct(self, profiename):
         self._loadConfigFile()
-        self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
+        #self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
+        self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
-        self.imageLeft.setServerProxy(self.clientleft)
+        #self.imageLeft.setServerProxy(self.clientleft)
+        self.imageLeft.setServerProxy(self.clienttop)
         self.imageRight.setServerProxy(self.clientright)
 
     def closeEvent(self, event):
@@ -328,19 +331,26 @@ class UISettings(QDialog):
         logging.info("preview: thread ending...")
 
     def _GetImageShow(self):
+        logging.info("preview: thread starting...")
         self.imageTop.setImageScale() 
-        logging.info(self.clientleft.startpause(False))
+        self.stop_prv.clear()
+        #logging.info(self.clientleft.startpause(False))
+        logging.info(self.clienttop.startpause(False))
         while True:
-            data = self.clientleft.preview().data
+            #data = self.clientleft.preview().data
+            data = self.clienttop.preview().data
             image = Image.open(io.BytesIO(data))
             imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
             pixmap = QPixmap.fromImage(imageq)
-            #self.imageTop.imagepixmap = pixmap
             self.imageTop.ShowPreImage(pixmap)
-            if self.previewEvent.is_set():
-                self.previewEvent.clear()
-                self.clientleft.startpause(True)
+            if self.stop_prv.is_set():
+                self.stop_prv.clear()
+                #self.clientleft.startpause(True)
+                self.clienttop.startpause(True)
                 break
+
+        self.stop_prv.clear()
+        logging.info("preview: thread ending...")
 
 
     @pyqtSlot()
@@ -378,7 +388,8 @@ class UISettings(QDialog):
 
     @pyqtSlot()
     def on_settingclick(self):
-        dlg = Settings(self, self.clientleft, self.clientright)
+        #dlg = Settings(self, self.clientleft, self.clientright)
+        dlg = Settings(self, self.clienttop, self.clientright)
         if dlg.exec_():
             self._loadConfigFile()
             print("Success!")
@@ -450,20 +461,21 @@ class UISettings(QDialog):
     def _showImage(self, index, imagelabel):
         imagelabel.setImageScale()     
         logging.info("Start testing %d" % index)
-        if index==1:
-            self.clientleft.TakePicture(index, not self.checkBox.isChecked()) 
+        if index==0:
+            self.clienttop.TakePicture(index, not self.checkBox.isChecked()) 
         elif index==2:
             self.clientright.TakePicture(index, not self.checkBox.isChecked())  
-        elif index == 0:
+        elif index == 1:
             self.capture(0, not self.checkBox.isChecked())
 
         logging.info("Start transfer %d" % index)
         if self.checkBox.isChecked():
-            if index==0:
+            if index==1:
                 imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index)#pixmap
             else:
-                data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
+                #data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
+                data = self.clienttop.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
                 logging.info("end testing %d" % index)
                 image = Image.open(io.BytesIO(data))
                 image.save("/tmp/ramdisk/temp_%d.jpg" % index)
@@ -479,10 +491,11 @@ class UISettings(QDialog):
 
     def _drawtestScrew(self, index, imagelabel):
         ret=0
-        if index==0:
+        if index==1:
             ret = imagelabel.DrawImageResults(self.imageresults)
         else:
-            ss = self.clientleft.ResultTest(index) if index==1 else self.clientright.ResultTest(index)
+            #ss = self.clientleft.ResultTest(index) if index==1 else self.clientright.ResultTest(index)
+            ss = self.clienttop.ResultTest(index) if index==1 else self.clientright.ResultTest(index)
             ret = imagelabel.DrawImageResults(json.loads(ss))
         return ret
 
@@ -535,13 +548,18 @@ class UISettings(QDialog):
         return ret
 
     def DrawResultTop(self):
-        self.imageTop.DrawImageResults(self.imageresults, None )
-
-    def DrawResultLeft(self):
-        data = json.loads(self.clientleft.ResultTest(1))
+        #self.imageTop.DrawImageResults(self.imageresults, None )
+        data = json.loads(self.clienttop.ResultTest(0))
         if len(data)>0:
             #status1 = self.testScrewResult(data)
-            status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
+            status1 = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[1]))
+
+    def DrawResultLeft(self):
+        self.imageLeft.DrawImageResults(self.imageresults, None )
+        #data = json.loads(self.clientleft.ResultTest(1))
+        #if len(data)>0:
+        #    #status1 = self.testScrewResult(data)
+        #    status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
 
     def DrawResultRight(self):
         data = json.loads(self.clientright.ResultTest(2))
@@ -558,9 +576,13 @@ class UISettings(QDialog):
             return             
         
         self.stop_prv.set() 
+        while self.stop_prv.is_set():
+            time.sleep(0.02)  
+
         self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        self.clientleft.profilepath(self.config["profilepath"], self.profilename)
         self.clientright.profilepath(self.config["profilepath"], self.profilename)        
+        #self.clientleft.profilepath(self.config["profilepath"], self.profilename)
+        self.clienttop.profilepath(self.config["profilepath"], self.profilename)
         self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
         pathleft = os.path.join(self.config["profilepath"], self.profilename, "left")
         pathtop = os.path.join(self.config["profilepath"], self.profilename, "top")
@@ -574,8 +596,6 @@ class UISettings(QDialog):
         self.profileimages[0]=os.path.join(pathtop,  self.profilename+".jpg")
         self.profileimages[1]=os.path.join(pathleft,  self.profilename+".jpg")
         self.profileimages[2]=os.path.join(pathright,  self.profilename+".jpg")
-        if self.stop_prv.is_set():
-            time.sleep(0.2)  
 
         logging.info("Start testing click")
 
@@ -648,7 +668,8 @@ class UISettings(QDialog):
     def _shutdown(self):
         #client = ServerProxy("http://localhost:8888", allow_none=True)
         try:
-            self.clientleft.CloseServer()
+            #self.clientleft.CloseServer()
+            self.clienttop.CloseServer()
             self.clientright.CloseServer()
         except :
             pass
