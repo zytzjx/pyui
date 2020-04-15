@@ -332,9 +332,9 @@ class UISettings(QDialog):
     def _GetImageShow(self):
         logging.info("preview: thread starting...")
         self.lblStatus.setText("ready")
-                self.lblStatus.setStyleSheet('''
-                color: black
-                ''')
+        self.lblStatus.setStyleSheet('''
+        color: black
+        ''')
         self.imageTop.setImageScale() 
         self.stop_prv.clear()
         #logging.info(self.clientleft.startpause(False))
