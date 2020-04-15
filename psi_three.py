@@ -139,7 +139,7 @@ class UISettings(QDialog):
         self.stop_prv = threading.Event()
         self.startKey =False
         #self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
-        self.clienttop = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
+        self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
         self.setStyleSheet('''
         QPushButton{background-color:rgba(255,178,0,50%);
@@ -177,9 +177,8 @@ class UISettings(QDialog):
             self.OnPreview()
         elif(value == 1):
             self.previewEvent.set() 
-            time.sleep(0.1)
             #start process
-            #self.on_startclick()
+            self.on_startclick()
         self.takelock.release()
 
     #@staticmethod
@@ -332,6 +331,10 @@ class UISettings(QDialog):
 
     def _GetImageShow(self):
         logging.info("preview: thread starting...")
+        self.lblStatus.setText("ready")
+                self.lblStatus.setStyleSheet('''
+                color: black
+                ''')
         self.imageTop.setImageScale() 
         self.stop_prv.clear()
         #logging.info(self.clientleft.startpause(False))
@@ -461,16 +464,16 @@ class UISettings(QDialog):
     def _showImage(self, index, imagelabel):
         imagelabel.setImageScale()     
         logging.info("Start testing %d" % index)
-        if index==0:
+        if index==ImageLabel.CAMERA.TOP.value:
             self.clienttop.TakePicture(index, not self.checkBox.isChecked()) 
-        elif index==2:
+        elif index==ImageLabel.CAMERA.RIGHT.value:
             self.clientright.TakePicture(index, not self.checkBox.isChecked())  
-        elif index == 1:
+        elif index == ImageLabel.CAMERA.LEFT.value:
             self.capture(0, not self.checkBox.isChecked())
 
         logging.info("Start transfer %d" % index)
         if self.checkBox.isChecked():
-            if index==1:
+            if index==ImageLabel.CAMERA.LEFT.value:
                 imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index)#pixmap
             else:
@@ -484,14 +487,14 @@ class UISettings(QDialog):
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
         else:
             imagelabel.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
-            if index==1:
+            if index==ImageLabel.CAMERA.LEFT.value:
                 imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index))
             else:
                 pass
 
     def _drawtestScrew(self, index, imagelabel):
         ret=0
-        if index==1:
+        if index==ImageLabel.CAMERA.LEFT.value:
             ret = imagelabel.DrawImageResults(self.imageresults)
         else:
             #ss = self.clientleft.ResultTest(index) if index==1 else self.clientright.ResultTest(index)
@@ -501,7 +504,7 @@ class UISettings(QDialog):
 
     def _ThreadTakepictureLeft(self):
         try:
-            self._showImage(1, self.imageLeft)
+            self._showImage(ImageLabel.CAMERA.LEFT.value, self.imageLeft)
         except Exception as ex:
             logging.info(str(ex))
             status = 5
@@ -510,7 +513,7 @@ class UISettings(QDialog):
 
     def _ThreadTakepictureRight(self):
         try:
-            self._showImage(2, self.imageRight)
+            self._showImage(ImageLabel.CAMERA.RIGHT.value, self.imageRight)
         except Exception as ex:
             logging.info(str(ex))
             status = 5
@@ -523,7 +526,7 @@ class UISettings(QDialog):
         #status, status1, status2 = 0, 0, 0
         self.takepic.clear()
         try:
-            self._showImage(0, self.imageTop)
+            self._showImage(ImageLabel.CAMERA.TOP.value, self.imageTop)
         except Exception as ex:
             logging.info(str(ex))
             status = 5
@@ -549,10 +552,10 @@ class UISettings(QDialog):
 
     def DrawResultTop(self):
         #self.imageTop.DrawImageResults(self.imageresults, None )
-        data = json.loads(self.clienttop.ResultTest(0))
+        data = json.loads(self.clienttop.ResultTest(ImageLabel.CAMERA.TOP.value))
         if len(data)>0:
             #status1 = self.testScrewResult(data)
-            status1 = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[1]))
+            status1 = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[ImageLabel.CAMERA.TOP.value]))
 
     def DrawResultLeft(self):
         self.imageLeft.DrawImageResults(self.imageresults, None )
@@ -562,10 +565,10 @@ class UISettings(QDialog):
         #    status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
 
     def DrawResultRight(self):
-        data = json.loads(self.clientright.ResultTest(2))
+        data = json.loads(self.clientright.ResultTest(ImageLabel.CAMERA.RIGHT.value))
         if len(data)>0:
             #status2 = self.testScrewResult(data)
-            status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[2]))
+            status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[ImageLabel.CAMERA.RIGHT.value]))
 
 
     @pyqtSlot()
@@ -593,9 +596,9 @@ class UISettings(QDialog):
             os.makedirs(pathtop, mode, True) 
             os.makedirs(pathright, mode, True) 
             
-        self.profileimages[0]=os.path.join(pathtop,  self.profilename+".jpg")
-        self.profileimages[1]=os.path.join(pathleft,  self.profilename+".jpg")
-        self.profileimages[2]=os.path.join(pathright,  self.profilename+".jpg")
+        self.profileimages[ImageLabel.CAMERA.TOP.value]=os.path.join(pathtop,  self.profilename+".jpg")
+        self.profileimages[ImageLabel.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
+        self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
 
         logging.info("Start testing click")
 
