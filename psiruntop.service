@@ -13,7 +13,7 @@ Environment=DISPLAY=:0.0
 Type=simple
 User=pi
 Restart=always
-ExecStart=python3 /home/pi/Desktop/pyUI/serversingletask.py -style right
+ExecStart=python3 /home/pi/Desktop/pyUI/serversingletask.py -style top
 
 [Install]
 WantedBy=graphical.target
