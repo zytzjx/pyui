@@ -16,10 +16,11 @@ import io
 from PIL import Image
 import logging
 
-from PyQt5.QtWidgets import (QApplication, QDialog)
-from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
-from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
- 
+#from PyQt5.QtWidgets import (QApplication, QDialog)
+#from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
+#from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
+from PyQt5.QtCore import QPoint, QRect
+
 import profiledata
 import testScrew
 import argparse
@@ -221,11 +222,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         x = pt.x()-self.screwW if pt.x()-self.screwW > 0 else 0
         y = pt.y()-self.screwH if pt.y()-self.screwH > 0 else 0
  
-        x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
-        y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
+        width, height = self._imagepixmapback.size
+
+        #x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
+        #y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
+        x1 = pt.x() + self.screwW if pt.x() + self.screwW < width else width
+        y1 = pt.y() + self.screwH if pt.y() + self.screwH < height else height
         
-        currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
-        cropQPixmap = self._imagepixmapback.copy(currentQRect)
+        #currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
+        cropQPixmap = self._imagepixmapback.crop((x,y,x1-x, y1-y))#.copy(currentQRect)
         profilepath=self._profilepath
         filename = self._fileprechar(index)+str(self._indexscrew)+".png" 
         profilepath=os.path.join(profilepath, self._DirSub(index), filename)
@@ -253,7 +258,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def CreateSamplePoint(self, index, x, y):
         if self._imagepixmapback == None or index != self._curIndex:
             filename = "/tmp/ramdisk/phoneimage_%d.jpg" % index
-            self._imagepixmapback = QPixmap(filename)
+            self._imagepixmapback = Image.open(filename)#QPixmap(filename)
         self._savescrew(index, QPoint(x,y))
 
     #@pyjsonrpc.rpcmethod
