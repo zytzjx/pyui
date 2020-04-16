@@ -469,7 +469,7 @@ class UISettings(QDialog):
         elif index==ImageLabel.CAMERA.RIGHT.value:
             self.clientright.TakePicture(index, not self.checkBox.isChecked())  
         elif index == ImageLabel.CAMERA.LEFT.value:
-            self.capture(0, not self.checkBox.isChecked())
+            self.capture(index, not self.checkBox.isChecked())
 
         logging.info("Start transfer %d" % index)
         if self.checkBox.isChecked():
@@ -478,7 +478,7 @@ class UISettings(QDialog):
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index)#pixmap
             else:
                 #data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
-                data = self.clienttop.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
+                data = self.clienttop.imageDownload(index).data if index == ImageLabel.CAMERA.TOP.value else self.clientright.imageDownload(index).data
                 logging.info("end testing %d" % index)
                 image = Image.open(io.BytesIO(data))
                 image.save("/tmp/ramdisk/temp_%d.jpg" % index)

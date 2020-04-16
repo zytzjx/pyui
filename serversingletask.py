@@ -16,9 +16,9 @@ import io
 from PIL import Image
 import logging
 
-#from PyQt5.QtWidgets import (QApplication, QDialog)
-#from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
-#from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
+from PyQt5.QtWidgets import (QApplication, QDialog)
+from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
+from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
  
 import profiledata
 import testScrew
@@ -385,7 +385,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
 
 if __name__ == '__main__':
-    #app = QApplication([])
+    app = QApplication([])
     ap = argparse.ArgumentParser()
     ap.add_argument("-style", "-style which camera[top left right]", type=str, required=True,
     	help="which camera")

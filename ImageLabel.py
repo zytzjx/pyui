@@ -13,8 +13,8 @@ import myconstdef
 
 
 class CAMERA(enum.Enum):
-   LEFT = 1
    TOP = 0
+   LEFT = 1
    RIGHT = 2
 
 class ImageLabel(QLabel):
@@ -235,7 +235,7 @@ class ImageLabel(QLabel):
             pass
 
         #self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
-        if self._camerapoisition == CAMERA.TOP:
+        if self._camerapoisition == CAMERA.LEFT:
             self._savescrew(QPoint(x * self.scalex, y*self.scaley))
         else:
             self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)

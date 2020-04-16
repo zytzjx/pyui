@@ -18,7 +18,7 @@ sudo apt-get update && sudo apt-get upgrade
 sudo apt -y install xscreensaver
 pip3 install paramiko
 sudo apt-get -y install qt5-default pyqt5-dev pyqt5-dev-tools
-sudo apt-get -y install matchbox-keyboard
+#sudo apt-get -y install matchbox-keyboard
 sudo apt -y install python3-opencv python3-opencv-apps
 sudo apt-get -y install libatlas-base-dev
 
