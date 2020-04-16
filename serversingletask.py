@@ -19,7 +19,7 @@ import logging
 #from PyQt5.QtWidgets import (QApplication, QDialog)
 #from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
 #from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
-#from PyQt5.QtCore import QPoint, QRect
+from PyQt5.QtCore import QPoint, QRect
  
 import profiledata
 import testScrew
@@ -219,11 +219,11 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _savescrew(self, index, pt):
         #h = a-b if a>b else a+b
-        x = pt[0]-self.screwW if pt[0]-self.screwW > 0 else 0
-        y = pt[1]-self.screwH if pt[1]-self.screwH > 0 else 0
+        x = pt.x()-self.screwW if pt.x()-self.screwW > 0 else 0
+        y = pt.y()-self.screwH if pt.y()-self.screwH > 0 else 0
  
-        x1 = pt[0] + self.screwW if pt[0] + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
-        y1 = pt[1] + self.screwH if pt[1] + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
+        x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
+        y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
         
         #currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
         cropQPixmap = self._imagepixmapback.crop((x,y, x1-x, y1-y))#.copy(currentQRect)
@@ -255,7 +255,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         if self._imagepixmapback == None or index != self._curIndex:
             filename = "/tmp/ramdisk/phoneimage_%d.jpg" % index
             self._imagepixmapback = Image.open(filename)#QPixmap(filename)
-        self._savescrew(index, (x,y))
+        self._savescrew(index, QPoint(x,y))
 
     #@pyjsonrpc.rpcmethod
     def updateProfile(self, ppath):
