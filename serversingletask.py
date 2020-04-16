@@ -19,6 +19,7 @@ import logging
 #from PyQt5.QtWidgets import (QApplication, QDialog)
 #from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
 #from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
+#from PyQt5.QtCore import QPoint, QRect
  
 import profiledata
 import testScrew
@@ -224,14 +225,14 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
         y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
         
-        currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
-        cropQPixmap = self._imagepixmapback.crop(currentQRect)#.copy(currentQRect)
+        #currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
+        cropQPixmap = self._imagepixmapback.crop((x,y, x1-x, y1-y))#.copy(currentQRect)
         profilepath=self._profilepath
         filename = self._fileprechar(index)+str(self._indexscrew)+".png" 
         profilepath=os.path.join(profilepath, self._DirSub(index), filename)
         self._indexscrew+=1
         cropQPixmap.save(profilepath)
-        screwpoint = profiledata.screw(self.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
+        screwpoint = profiledata.screw(self.profilename, filename, pt, (x,y), (x1,y1))
         #self.ProfilePoint.append(screwpoint)
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
         profiletxt = os.path.join(self._profilepath, self._DirSub(index),  self.profilename+".txt")
