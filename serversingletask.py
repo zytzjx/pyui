@@ -230,7 +230,8 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         y1 = pt.y() + self.screwH if pt.y() + self.screwH < height else height
         
         #currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
-        cropQPixmap = self._imagepixmapback.crop((x,y,x1-x, y1-y))#.copy(currentQRect)
+        cropQPixmap = self._imagepixmapback.crop((x,y,x1,y1))#.copy(currentQRect)
+        print("copy image")
         profilepath=self._profilepath
         filename = self._fileprechar(index)+str(self._indexscrew)+".png" 
         profilepath=os.path.join(profilepath, self._DirSub(index), filename)
@@ -239,6 +240,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         screwpoint = profiledata.screw(self.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
         #self.ProfilePoint.append(screwpoint)
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
+        print(sinfo)
         profiletxt = os.path.join(self._profilepath, self._DirSub(index),  self.profilename+".txt")
         self._append_new_line(profiletxt, sinfo)
 

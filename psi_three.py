@@ -580,7 +580,7 @@ class UISettings(QDialog):
         
         self.stop_prv.set() 
         if self.stop_prv.is_set():
-            time.sleep(0.02)  
+            time.sleep(0.1)  
 
         self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
         self.clientright.profilepath(self.config["profilepath"], self.profilename)        
