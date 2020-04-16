@@ -390,7 +390,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
 
 if __name__ == '__main__':
-    app = QApplication([])
+    #app = QApplication([])
     ap = argparse.ArgumentParser()
     ap.add_argument("-style", "-style which camera[top left right]", type=str, required=True,
     	help="which camera")
