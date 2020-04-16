@@ -579,7 +579,7 @@ class UISettings(QDialog):
             return             
         
         self.stop_prv.set() 
-        while self.stop_prv.is_set():
+        if self.stop_prv.is_set():
             time.sleep(0.02)  
 
         self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()

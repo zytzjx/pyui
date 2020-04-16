@@ -16,9 +16,9 @@ import io
 from PIL import Image
 import logging
 
-from PyQt5.QtWidgets import (QApplication, QDialog)
-from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
-from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
+#from PyQt5.QtWidgets import (QApplication, QDialog)
+#from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal,QPoint, QRect
+#from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
  
 import profiledata
 import testScrew
@@ -225,7 +225,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
         
         currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
-        cropQPixmap = self._imagepixmapback.copy(currentQRect)
+        cropQPixmap = self._imagepixmapback.crop(currentQRect)#.copy(currentQRect)
         profilepath=self._profilepath
         filename = self._fileprechar(index)+str(self._indexscrew)+".png" 
         profilepath=os.path.join(profilepath, self._DirSub(index), filename)
@@ -253,7 +253,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def CreateSamplePoint(self, index, x, y):
         if self._imagepixmapback == None or index != self._curIndex:
             filename = "/tmp/ramdisk/phoneimage_%d.jpg" % index
-            self._imagepixmapback = QPixmap(filename)
+            self._imagepixmapback = Image.open(filename)#QPixmap(filename)
         self._savescrew(index, QPoint(x,y))
 
     #@pyjsonrpc.rpcmethod
@@ -385,7 +385,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
 
 if __name__ == '__main__':
-    app = QApplication([])
+    #app = QApplication([])
     ap = argparse.ArgumentParser()
     ap.add_argument("-style", "-style which camera[top left right]", type=str, required=True,
     	help="which camera")
