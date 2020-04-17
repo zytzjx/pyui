@@ -29,6 +29,7 @@ import json
 import subprocess
 
 
+
 class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
     pass
 
@@ -211,9 +212,9 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _fileprechar(self, argument):
         switcher = {
-            ImageLabel.CAMERA.LEFT.value: "L",
-            ImageLabel.CAMERA.TOP.value: "T",
-            ImageLabel.CAMERA.RIGHT.value: "R",
+            1: "L",
+            0: "T",
+            2: "R",
         }
         return switcher.get(argument, "Invalid")
 
