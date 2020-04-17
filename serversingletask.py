@@ -211,9 +211,9 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _fileprechar(self, argument):
         switcher = {
-            1: "L",
-            0: "T",
-            2: "R",
+            ImageLabel.CAMERA.LEFT.value: "L",
+            ImageLabel.CAMERA.TOP.value: "T",
+            ImageLabel.CAMERA.RIGHT.value: "R",
         }
         return switcher.get(argument, "Invalid")
 

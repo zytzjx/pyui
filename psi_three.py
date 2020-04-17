@@ -436,7 +436,9 @@ class UISettings(QDialog):
         os.system(cmd)
 
     def capture(self, cam, IsDetect=True):
-        cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        cmd = "raspistill -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        if cam ==0:
+            cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         logging.info(cmd)
         os.system(cmd)
         if not IsDetect:
