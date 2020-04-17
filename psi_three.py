@@ -104,6 +104,7 @@ class StatusCheckThread(QThread):
                     oldstatus = status
                 #time.sleep(0.05)
                 self.msleep(50)
+            statusser.stop()
 
 class UISettings(QDialog):
     """Settings dialog widget
@@ -365,20 +366,28 @@ class UISettings(QDialog):
             self.leProfile.show()
             self.comboBox.hide()
         else:
-            self.imageTop.isProfile = False
-            self.imageLeft.isProfile = False
-            self.imageRight.isProfile = False
-            self.leProfile.hide()
-            self.comboBox.clear() 
-            self.comboBox.addItems([name for name in os.listdir(self.config["profilepath"]) if os.path.isdir(os.path.join(self.config["profilepath"], name))])
-            self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
-            self.comboBox.show()
-            tl = Process(target=self.runsyncprofiles, args=(True,))
-            tl.start()
-            tr = Process(target=self.runsyncprofiles, args=(False,))
-            tr.start()
-            tl.join()
-            tr.join()
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            try:
+                self.imageTop.isProfile = False
+                self.imageLeft.isProfile = False
+                self.imageRight.isProfile = False
+                self.leProfile.hide()
+                self.comboBox.clear() 
+                self.comboBox.addItems([name for name in os.listdir(self.config["profilepath"]) if os.path.isdir(os.path.join(self.config["profilepath"], name))])
+                self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
+                self.comboBox.show()
+                tl = Process(target=self.runsyncprofiles, args=(True,))
+                tl.start()
+                tr = Process(target=self.runsyncprofiles, args=(False,))
+                tr.start()
+                tl.join()
+                tr.join()
+
+            except Exception as e:
+                logging.exception(str(e))
+            finally:
+                QApplication.restoreOverrideCursor() 
+
 
     @pyqtSlot()
     def on_CameraChange(self):
@@ -506,7 +515,7 @@ class UISettings(QDialog):
         try:
             self._showImage(ImageLabel.CAMERA.LEFT.value, self.imageLeft)
         except Exception as ex:
-            logging.info(str(ex))
+            logging.exception(str(ex))
             status = 5
 
         logging.info("ending camera Left and transfer")
@@ -515,7 +524,7 @@ class UISettings(QDialog):
         try:
             self._showImage(ImageLabel.CAMERA.RIGHT.value, self.imageRight)
         except Exception as ex:
-            logging.info(str(ex))
+            logging.exception(str(ex))
             status = 5
 
         logging.info("ending camera right and transfer")
@@ -528,7 +537,7 @@ class UISettings(QDialog):
         try:
             self._showImage(ImageLabel.CAMERA.TOP.value, self.imageTop)
         except Exception as ex:
-            logging.info(str(ex))
+            logging.exception(str(ex))
             status = 5
         #finally:
         #    self.takelock.release()
@@ -582,91 +591,98 @@ class UISettings(QDialog):
         if self.stop_prv.is_set():
             time.sleep(0.1)  
 
-        self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        self.clientright.profilepath(self.config["profilepath"], self.profilename)        
-        #self.clientleft.profilepath(self.config["profilepath"], self.profilename)
-        self.clienttop.profilepath(self.config["profilepath"], self.profilename)
-        self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
-        pathleft = os.path.join(self.config["profilepath"], self.profilename, "left")
-        pathtop = os.path.join(self.config["profilepath"], self.profilename, "top")
-        pathright = os.path.join(self.config["profilepath"], self.profilename, "right")
-        if self.checkBox.isChecked():
-            mode = 0o777
-            os.makedirs(pathleft, mode, True) 
-            os.makedirs(pathtop, mode, True) 
-            os.makedirs(pathright, mode, True) 
-            
-        self.profileimages[ImageLabel.CAMERA.TOP.value]=os.path.join(pathtop,  self.profilename+".jpg")
-        self.profileimages[ImageLabel.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
-        self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
-
-        logging.info("Start testing click")
-
-        logging.info("Start testing t")
-        p = threading.Thread(target=self._ThreadTakepicture)
-        p.start()
-        pLeft = Process(target=self._ThreadTakepictureLeft)
-        pLeft.start()
-        pRight = Process(target=self._ThreadTakepictureRight)
-        pRight.start()
-        p.join()
-        logging.info("Start end t")        
-        pLeft.join()
-        logging.info("Start end left")        
-        pRight.join()
-        logging.info("Start end right")        
-        if not self.checkBox.isChecked():
-            status, status1, status2 = 0, 0, 0
-            #self.takepic.wait()
-            #self.takepic.clear()
-            try:
-                logging.info("Start Draw Info")
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+            self.clientright.profilepath(self.config["profilepath"], self.profilename)        
+            #self.clientleft.profilepath(self.config["profilepath"], self.profilename)
+            self.clienttop.profilepath(self.config["profilepath"], self.profilename)
+            self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
+            pathleft = os.path.join(self.config["profilepath"], self.profilename, "left")
+            pathtop = os.path.join(self.config["profilepath"], self.profilename, "top")
+            pathright = os.path.join(self.config["profilepath"], self.profilename, "right")
+            if self.checkBox.isChecked():
+                mode = 0o777
+                os.makedirs(pathleft, mode, True) 
+                os.makedirs(pathtop, mode, True) 
+                os.makedirs(pathright, mode, True) 
                 
-                threads=[]
-                ttop = threading.Thread(target=self.DrawResultTop)
-                ttop.start()
-                threads.append(ttop)
-                logging.info("Draw top finish")
-                
-                tleft = threading.Thread(target=self.DrawResultLeft)
-                tleft.start()
-                threads.append(tleft)
-                logging.info("Draw left finish")
+            self.profileimages[ImageLabel.CAMERA.TOP.value]=os.path.join(pathtop,  self.profilename+".jpg")
+            self.profileimages[ImageLabel.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
+            self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
 
-                tright = threading.Thread(target=self.DrawResultRight)
-                tright.start()
-                threads.append(tright)
-                
-                for t in threads:
-                    t.join()
-                
-                status = self.imageTop.imagedresult
-                status1 = self.imageLeft.imagedresult
-                status2 = self.imageRight.imagedresult
-                logging.info("End Draw Info")
-            except :
-                status = 5
+            logging.info("Start testing click")
 
-            status = max([status, status1, status2])
-            if status==0:
-                self.lblStatus.setText("success")
-                self.lblStatus.setStyleSheet('''
-                color: green
-                ''')
-            elif status==1:
-                self.lblStatus.setText("warning")
-                self.lblStatus.setStyleSheet('''
-                color: yellow
-                ''')
-            else:
-                self.lblStatus.setText("Error")
-                self.lblStatus.setStyleSheet('''
-                color: red
-                ''')
+            logging.info("Start testing top")
+            p = threading.Thread(target=self._ThreadTakepicture)
+            p.start()
+            pLeft = threading.Thread(target=self._ThreadTakepictureLeft)
+            pLeft.start()
+            pRight = threading.Thread(target=self._ThreadTakepictureRight)
+            pRight.start()
+            p.join()
+            logging.info("Start end top")        
+            pLeft.join()
+            logging.info("Start end left")        
+            pRight.join()
+            logging.info("Start end right")        
+            if not self.checkBox.isChecked():
+                status, status1, status2 = 0, 0, 0
+                #self.takepic.wait()
+                #self.takepic.clear()
+                try:
+                    logging.info("Start Draw Info")
+                    
+                    threads=[]
+                    ttop = threading.Thread(target=self.DrawResultTop)
+                    ttop.start()
+                    threads.append(ttop)
+                    logging.info("Draw top finish")
+                    
+                    tleft = threading.Thread(target=self.DrawResultLeft)
+                    tleft.start()
+                    threads.append(tleft)
+                    logging.info("Draw left finish")
 
-        logging.info("task finished")
+                    tright = threading.Thread(target=self.DrawResultRight)
+                    tright.start()
+                    threads.append(tright)
+                    
+                    for t in threads:
+                        t.join()
+                    
+                    status = self.imageTop.imagedresult
+                    status1 = self.imageLeft.imagedresult
+                    status2 = self.imageRight.imagedresult
+                    logging.info("End Draw Info")
+                except :
+                    status = 5
 
-        return
+                status = max([status, status1, status2])
+                if status==0:
+                    self.lblStatus.setText("success")
+                    self.lblStatus.setStyleSheet('''
+                    color: green
+                    ''')
+                elif status==1:
+                    self.lblStatus.setText("warning")
+                    self.lblStatus.setStyleSheet('''
+                    color: yellow
+                    ''')
+                else:
+                    self.lblStatus.setText("Error")
+                    self.lblStatus.setStyleSheet('''
+                    color: red
+                    ''')
+
+            logging.info("task finished")
+
+        except Exception as e:
+            logging.exception(str(e))
+        finally:
+            QApplication.restoreOverrideCursor() 
+
+
 
     def _shutdown(self):
         #client = ServerProxy("http://localhost:8888", allow_none=True)
