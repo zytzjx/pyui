@@ -103,6 +103,8 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
             corrcoefScore[i] = np.corrcoef(A.ravel(), B.ravel())[0][1]
             #roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
         else:
+            print(A.shape)
+            print(B.shape)
             print('Size of test screw does not match size of profile...')
             print('Or std of A or B is 0')
             corrcoefScore[i] = 0
@@ -138,9 +140,9 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             screwTemplateImageName = words[0][:-1]
             #print(screwTemplateImageName)
             roi_0 = int(words[3][:-1])
-            roi_1 = int(words[4]) + 1
+            roi_1 = int(words[4])         #+1
             roi_2 = int(words[1][:-1])
-            roi_3 = int(words[2][:-1]) + 1
+            roi_3 = int(words[2][:-1])    #+1
             imageTemplate = cv2.imread(screwTemplateImageName)
             imageTemplate = cv2.cvtColor(imageTemplate, cv2.COLOR_BGR2GRAY)
             maxScore = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
