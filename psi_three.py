@@ -31,6 +31,7 @@ import numpy as np
 
 import testScrew
 import myconstdef
+import resource
 
 files = []
 
@@ -665,19 +666,19 @@ class UISettings(QDialog):
 
                 status = max([status, status1, status2])
                 if status==0:
-                    self.lblStatus.setText("success")
+                    self.lblStatus.setText("")
                     self.lblStatus.setStyleSheet('''
-                    color: green
+                    border-image: url(:/icons/yes.png); 
                     ''')
                 elif status==1:
-                    self.lblStatus.setText("warning")
+                    self.lblStatus.setText("")
                     self.lblStatus.setStyleSheet('''
-                    color: yellow
+                    border-image: url(:/icons/warning.png);
                     ''')
                 else:
-                    self.lblStatus.setText("Error")
+                    self.lblStatus.setText("")
                     self.lblStatus.setStyleSheet('''
-                    color: red
+                    border-image: url(:/icons/no.png); 
                     ''')
 
             logging.info("task finished")
@@ -706,6 +707,9 @@ class UISettings(QDialog):
         time.sleep(0.1)
         window.tabWidget.setCurrentIndex(2)
         time.sleep(0.1)
+        logging.info(str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
+        self.lblStatus.setFixedSize(self.lblStatus.width(),self.lblStatus.width())
+        logging.info("Status Size:"+str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
         window.tabWidget.setCurrentIndex(0)
         self.serialThread.start()
         self.imageTop.setImageScale() 

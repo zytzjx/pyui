@@ -10,6 +10,7 @@ from datetime import datetime
 from xmlrpc.client import ServerProxy
 import numpy as np
 import myconstdef
+import resource
 
 
 class CAMERA(enum.Enum):
@@ -22,7 +23,7 @@ class ImageLabel(QLabel):
     def __init__(self, parent=None):
         super(ImageLabel, self).__init__(parent)
         self.setMouseTracking(True)
-        self.CURSOR_NEW = QCursor(QPixmap('cursor.png').scaled(25,25, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.CURSOR_NEW = QCursor(QPixmap(':/icons/cursor.png').scaled(25,25, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.CUR_CUESOR = self.cursor()
         self._imagepixmap = None
         self._imagepixmapback = None
