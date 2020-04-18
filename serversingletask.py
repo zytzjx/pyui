@@ -27,6 +27,7 @@ import argparse
 
 import json
 import subprocess
+import myconstdef
 
 
 
@@ -40,8 +41,8 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self.profilename=""
         self.rootprofielpath=""
         self._profilepath=""
-        self.screwW = 24
-        self.screwH = 24
+        self.screwW = myconstdef.screwWidth
+        self.screwH = myconstdef.screwHeight
         self._imagepixmapback = None
         self._curIndex=0
         self._indexscrew = 0
@@ -365,6 +366,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         #if self.yanthreads[index].isAlive():
         #    self.yanthreads[index].join()
         data=[]     
+        print(self.imageresults)
         if index<3:
             data = self.imageresults[index]
         ss = json.dumps(data)

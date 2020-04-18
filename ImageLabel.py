@@ -32,8 +32,8 @@ class ImageLabel(QLabel):
         self.scaley =0.0
         self.imagel = 0
         self.imaget = 0
-        self.screwW = 24
-        self.screwH = 24
+        self.screwW = myconstdef.screwWidth
+        self.screwH = myconstdef.screwHeight
         self._isProfile = False
         self.ProfilePoint=[]
         self._camerapoisition=CAMERA.TOP

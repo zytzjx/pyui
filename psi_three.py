@@ -428,7 +428,7 @@ class UISettings(QDialog):
         return switcher.get(argument, "Invalid")
 
     def runsyncprofiles(self, isLeft):
-        ip = myconstdef.IP_LEFT
+        ip = myconstdef.IP_TOP
         if not isLeft:
             ip = myconstdef.IP_RIGHT
         
@@ -563,12 +563,14 @@ class UISettings(QDialog):
 
     def DrawResultTop(self):
         #self.imageTop.DrawImageResults(self.imageresults, None )
+        self.imageTop.imagedresult = 0
         data = json.loads(self.clienttop.ResultTest(ImageLabel.CAMERA.TOP.value))
         if len(data)>0:
             #status1 = self.testScrewResult(data)
             status1 = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[ImageLabel.CAMERA.TOP.value]))
 
     def DrawResultLeft(self):
+        self.imageTop.imagedresult = 0
         self.imageLeft.DrawImageResults(self.imageresults, None )
         #data = json.loads(self.clientleft.ResultTest(1))
         #if len(data)>0:
@@ -576,6 +578,7 @@ class UISettings(QDialog):
         #    status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
 
     def DrawResultRight(self):
+        self.imageTop.imagedresult = 0
         data = json.loads(self.clientright.ResultTest(ImageLabel.CAMERA.RIGHT.value))
         if len(data)>0:
             #status2 = self.testScrewResult(data)
