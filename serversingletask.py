@@ -59,6 +59,11 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self._tpreview =None
         self.IsPreviewing=False
 
+    def setScrewSize(self, w, h):
+        self.screwW = w
+        self.screwH = h
+
+
     def setConfig(self, sconfig):
         if not (sconfig is None or sconfig==""):
             self._config=json.loads(sconfig)

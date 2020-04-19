@@ -292,7 +292,7 @@ class UISettings(QDialog):
         #ssh.set_missing_host_key_policy(AutoAddPolicy())
         ssh.load_system_host_keys()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname=myconstdef.IP, username='pi', password=myconstdef.PSSWORD, look_for_keys=False)
+        ssh.connect(hostname=myconstdef.IP, username='pi', password=myconstdef.PASSWORD, look_for_keys=False)
 
         stdin, stdout, stderr = ssh.exec_command('DISPLAY=:0.0 python3 ~/Desktop/pyUI/serversingletask.py &')
         bErrOut = True
@@ -626,7 +626,9 @@ class UISettings(QDialog):
             self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
 
             logging.info("Start testing click")
-
+            if  self.checkBox.isChecked():
+                self.clienttop.setScrewSize(myconstdef.screwWidth, myconstdef.screwHeight)
+                self.clientright.setScrewSize(myconstdef.screwWidth, myconstdef.screwHeight)
             logging.info("Start testing top")
             p = threading.Thread(target=self._ThreadTakepicture)
             p.start()
