@@ -113,11 +113,20 @@ class ImageLabel(QLabel):
         return False
 
     def _savescrew(self, pt):
-        x = pt.x()-self.screwW if pt.x()-self.screwW > 0 else 0
-        y = pt.y()-self.screwH if pt.y()-self.screwH > 0 else 0
+        screwLeft = self.screwW /2
+        screwRight = self.screwW - screwLeft
+        screwTop = self.screwH / 2
+        screwBottom = self.screwH - screwTop
+        x = pt.x()-screwLeft if pt.x()-screwLeft > 0 else 0
+        y = pt.y()-screwTop if pt.y()-screwTop > 0 else 0
+
+        #x = pt.x()-self.screwW if pt.x()-self.screwW > 0 else 0
+        #y = pt.y()-self.screwH if pt.y()-self.screwH > 0 else 0
+        #x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
+        #y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
  
-        x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
-        y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
+        x1 = pt.x() + screwRight if pt.x() + screwRight < self._imagepixmapback.width() else self._imagepixmapback.width()
+        y1 = pt.y() + screwBottom if pt.y() + screwBottom < self._imagepixmapback.height() else self._imagepixmapback.height()
         
         currentQRect = QRect(QPoint(x,y),QPoint(x1 - 1, y1 - 1))
         cropQPixmap = self._imagepixmapback.copy(currentQRect)

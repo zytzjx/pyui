@@ -226,15 +226,19 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _savescrew(self, index, pt):
         #h = a-b if a>b else a+b
-        x = pt.x()-self.screwW if pt.x()-self.screwW > 0 else 0
-        y = pt.y()-self.screwH if pt.y()-self.screwH > 0 else 0
+        screwLeft = self.screwW /2
+        screwRight = self.screwW - screwLeft
+        screwTop = self.screwH / 2
+        screwBottom = self.screwH - screwTop
+        x = pt.x()-screwLeft if pt.x()-screwLeft > 0 else 0
+        y = pt.y()-screwTop if pt.y()-screwTop > 0 else 0
  
         width, height = self._imagepixmapback.size
 
         #x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
         #y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
-        x1 = pt.x() + self.screwW if pt.x() + self.screwW < width else width
-        y1 = pt.y() + self.screwH if pt.y() + self.screwH < height else height
+        x1 = pt.x() + screwRight if pt.x() + screwRight < width else width
+        y1 = pt.y() + screwBottom if pt.y() + screwBottom < height else height
         
         #currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
         cropQPixmap = self._imagepixmapback.crop((x,y,x1,y1))#.copy(currentQRect)
