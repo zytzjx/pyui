@@ -30,6 +30,7 @@ class FDProtocol(serial.threaded.LineReader):
         self.proximity = threading.Event()
         self.proximityStatus = False
         self.proximityThreshold = 20000
+        self.laserCount = 10
 
     def setProxThreshold(self, value):
         self.proximityThreshold = value
@@ -70,11 +71,14 @@ class FDProtocol(serial.threaded.LineReader):
                     self.proximityStatus = True
             elif m.group(1) == "Laser":
                 if int(m.group(2)) == 0:
+                    self.laserCount = 0
                     self.laser.set()
                     self.laserStatus = False
                 else:
-                    self.laser.clear()
-                    self.laserStatus = True
+                    self.laserCount += 1
+                    if self.laserCount > 10:
+                        self.laser.clear()
+                        self.laserStatus = True
 
     def handle_event(self, event):
         """
