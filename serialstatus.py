@@ -59,6 +59,7 @@ class FDProtocol(serial.threaded.LineReader):
         Handle input from serial port, check for events.
         """
         m = re.search(r'^(.*?):[ ]?(\d+)$', line)
+        logging.info(line)
         if m:
             if m.group(1) =="Proximity":
                 if int(m.group(2)) < self.proximityThreshold:
