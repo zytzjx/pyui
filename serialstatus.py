@@ -77,6 +77,7 @@ class FDProtocol(serial.threaded.LineReader):
                 else:
                     self.laserCount += 1
                     if self.laserCount > 10:
+                        logging.info("hand removed")
                         self.laser.clear()
                         self.laserStatus = True
 
