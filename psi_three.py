@@ -115,7 +115,8 @@ class UISettings(QDialog):
     resized = pyqtSignal()
     def __init__(self, parent=None):
         super(UISettings, self).__init__()
-        loadUi('/home/pi/Desktop/pyUI/psi_auto.ui', self)
+        home=os.path.expanduser("~")
+        loadUi(home+'/Desktop/pyUI/psi_auto.ui', self)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.changeStyle('Fusion')
         self.pbClose.clicked.connect(self.closeEvent)
@@ -124,6 +125,7 @@ class UISettings(QDialog):
         self.pbStart.clicked.connect(self.on_startclick)
         self.serialThread = StatusCheckThread()
         self.config=settings.DEFAULTCONFIG
+        self._loadConfigFile()
         self.updateProfile()
         #self.resized.connect(self.someFunction)
         self.pbSetting.clicked.connect(self.on_settingclick)
@@ -173,16 +175,16 @@ class UISettings(QDialog):
         self.profilename=""
 
     def StatusChange(self, value):
-        self.takelock.acquire()
-        print("value is :"+str(value))
-        if (value == 2):
-            self.OnPreview()
-        elif(value == 1):
-            self.previewEvent.set() 
-            #start process
-            self.on_startclick()
-        self.takelock.release()
-
+        with self.takelock:
+            print("value is :"+str(value))
+            if (value == 2):
+                self.OnPreview()
+            elif(value == 1):
+                if self.isAutoDetect:
+                    self.previewEvent.set() 
+                    #start process
+                    self.on_startclick()
+   
     #@staticmethod
     def createKeyboard(self):
         #subprocess.Popen(["killall","matchbox-keyboa"])
@@ -239,11 +241,19 @@ class UISettings(QDialog):
         if os.path.isfile('config.json'):
             with open('config.json') as json_file:
                 self.config = json.load(json_file)
+
+        self.imageWidth = self.config['cw'] if 'cw' in self.config else 3280
+        self.imageHeight = self.config['ch'] if 'ch' in self.config else 2464
+        myconstdef.screwWidth = self.config['screww'] if 'screww' in self.config else 40
+        myconstdef.screwHeight = self.config['screwh']  if 'screwh' in self.config else 40
+        self.isPreview= self.config['preview'] if 'preview' in self.config else True
+        self.isAutoDetect = self.config["autostart"] if 'autostart' in self.config else True
+        self.sProfilePath = self.config["profilepath"] if 'profilepath' in self.config else '/home/pi/Desktop/pyUI/profiles'
         self.serialThread.setThrehold(self.config["threhold"] if 'threhold' in self.config else 20000)
 
 
     def createprofiledirstruct(self, profiename):
-        self._loadConfigFile()
+        #self._loadConfigFile()
         #self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
         self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
@@ -405,11 +415,9 @@ class UISettings(QDialog):
         dlg = Settings(self, self.clienttop, self.clientright)
         if dlg.exec_():
             self._loadConfigFile()
-            print("Success!")
+            logging.info("Success!")
         else:
-            print("Cancel!")  
-
-        #self.ShowKeyBoard()      
+            logging.info("Cancel!")  
 
     @pyqtSlot()
     def on_click(self):

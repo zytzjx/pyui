@@ -35,9 +35,7 @@ class Settings(QDialog):
             with open('config.json', 'w') as outfile:
                 json.dump(DEFAULTCONFIG, outfile)
 
-        self.leProfilePath.setText(self.data['profilepath'])
-        self.leWidth.setText(str(self.data['cw']))
-        self.leHeight.setText(str(self.data['ch']))
+        self._loaddata()
 
         self.leftProxy = leftproxy
         self.rightProxy = rightproxy
@@ -94,12 +92,26 @@ class Settings(QDialog):
             self.lineEdit_3.setText(fname)
             self.data["profilepath"] = fname
 
+    def _loaddata(self):
+        self.leWidth.setText(str(self.data['cw']) if 'cw' in self.data else 3280)
+        self.leHeight.setText(str(self.data['ch']) if 'ch' in self.data else 2464)
+        self.sbScrewWidth.value = self.data['screww'] if 'screww' in self.data else 40
+        self.sbScrewHeight.value = self.data['screwh']  if 'screwh' in self.data else 40
+        self.sbPromixity.value = self.data['threhold']  if 'threhold' in self.data else 40000
+        self.cbPreview.setChecked(self.data['preview'] if 'preview' in self.data else True)
+        self.cbAutoDetect.setChecked(self.data["autostart"] if 'autostart' in self.data else True)
+        self.leProfilePath.setText(self.data["profilepath"] if 'profilepath' in self.data else '/home/pi/Desktop/pyUI/profiles')
+
 
     def _savedata(self):
         self.data['cw'] = int(self.leWidth.text())
         self.data['ch'] = int(self.leHeight.text())
+        self.data['screww'] = self.sbScrewWidth.value
+        self.data['screwh'] = self.sbScrewHeight.value
         self.data['threhold'] = self.sbPromixity.value
         self.data['preview'] = self.cbPreview.isChecked()
+        self.data["autostart"] = self.cbAutoDetect.isChecked()
+        self.data["profilepath"] = self.leProfilePath.text()
         with open('config.json', 'w') as outfile:
             json.dump(self.data, outfile)
 
