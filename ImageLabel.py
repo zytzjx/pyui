@@ -119,7 +119,7 @@ class ImageLabel(QLabel):
         x1 = pt.x() + self.screwW if pt.x() + self.screwW < self._imagepixmapback.width() else self._imagepixmapback.width()
         y1 = pt.y() + self.screwH if pt.y() + self.screwH < self._imagepixmapback.height() else self._imagepixmapback.height()
         
-        currentQRect = QRect(QPoint(x,y),QPoint(x1,y1))
+        currentQRect = QRect(QPoint(x,y),QPoint(x1 - 1, y1 - 1))
         cropQPixmap = self._imagepixmapback.copy(currentQRect)
         profilepath=os.path.join(self.profilerootpath, self.profile.profilename)
         filename = self.fileprechar(self._camerapoisition)+str(self._indexscrew)+".png" 
