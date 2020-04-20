@@ -78,9 +78,11 @@ def globalAlignment(img1_color, img2_color):
 
 def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
 
-    corrcoefScore = np.zeros(60)
+    corrcoefScore = np.zeros(80)
+    width = imageTemplate.shape[0]
+    height = imageTemplate.shape[1]
     #roiList = []
-    for i in range(60):
+    for i in range(80):
         rows, cols = bigImage.shape
         trans_range = 10
         # Translation
@@ -89,9 +91,9 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
         ##Trans_M = np.float([[1, 0, tr_x], [0, 1, tr_y]])
         ##bigImg = cv2.warpAffine(bigImage, Trans_M, (cols, rows))
         new_roi_0 = int(roi_0 + tr_x)
-        new_roi_1 = int(roi_1 + tr_x)
+        new_roi_1 = new_roi_0 + width
         new_roi_2 = int(roi_2 + tr_y)
-        new_roi_3 = int(roi_3 + tr_y)
+        new_roi_3 = new_roi_2 + height
         if (new_roi_0 > 0 and new_roi_1 < cols and new_roi_2 >0 and new_roi_3 < rows):
             img = bigImage[new_roi_0: new_roi_1, new_roi_2: new_roi_3]
         else:
@@ -140,9 +142,9 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             screwTemplateImageName = words[0][:-1]
             #print(screwTemplateImageName)
             roi_0 = int(words[3][:-1])
-            roi_1 = int(words[4])         #+1
+            roi_1 = int(words[4])
             roi_2 = int(words[1][:-1])
-            roi_3 = int(words[2][:-1])    #+1
+            roi_3 = int(words[2][:-1])
             imageTemplate = cv2.imread(screwTemplateImageName)
             imageTemplate = cv2.cvtColor(imageTemplate, cv2.COLOR_BGR2GRAY)
             maxScore = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
