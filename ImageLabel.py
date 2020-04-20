@@ -33,8 +33,8 @@ class ImageLabel(QLabel):
         self.scaley =0.0
         self.imagel = 0
         self.imaget = 0
-        self.screwW = myconstdef.screwWidth
-        self.screwH = myconstdef.screwHeight
+        #self.screwW = myconstdef.screwWidth
+        #self.screwH = myconstdef.screwHeight
         self._isProfile = False
         self.ProfilePoint=[]
         self._camerapoisition=CAMERA.TOP
@@ -113,10 +113,10 @@ class ImageLabel(QLabel):
         return False
 
     def _savescrew(self, pt):
-        screwLeft = self.screwW /2
-        screwRight = self.screwW - screwLeft
-        screwTop = self.screwH / 2
-        screwBottom = self.screwH - screwTop
+        screwLeft = myconstdef.screwWidth /2
+        screwRight = myconstdef.screwWidth - screwLeft
+        screwTop = myconstdef.screwHeight / 2
+        screwBottom = myconstdef.screwHeight - screwTop
         x = pt.x()-screwLeft if pt.x()-screwLeft > 0 else 0
         y = pt.y()-screwTop if pt.y()-screwTop > 0 else 0
 
