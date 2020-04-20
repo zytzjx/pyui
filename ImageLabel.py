@@ -22,6 +22,7 @@ class ImageLabel(QLabel):
     #LEFTCAMERA, TOPCAMERA, RIGHTCAMERA=range(3)
     def __init__(self, parent=None):
         super(ImageLabel, self).__init__(parent)
+        self.logger = logging.getLogger('PSILOG')
         self.setMouseTracking(True)
         self.CURSOR_NEW = QCursor(QPixmap(':/icons/cursor.png').scaled(25,25, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.CUR_CUESOR = self.cursor()
@@ -76,7 +77,7 @@ class ImageLabel(QLabel):
         if self.w == 0 or self.h ==0:
             self.w = self.width()
             self.h = self.height()
-            logging.info("uilabel:"+str(self.w)+"X"+str(self.h))
+            self.logger.info("uilabel:"+str(self.w)+"X"+str(self.h))
 
     @property
     def isProfile(self):
@@ -99,9 +100,9 @@ class ImageLabel(QLabel):
         self.scaley = float(value.height()) / self.pixmap().height()
         self.imagel = (self.width() - self.pixmap().width())/2
         self.imaget = (self.height() - self.pixmap().height())/2
-        logging.info("lblimage:"+str(self.pixmap().width())+"X"+str(self.pixmap().height()))
-        logging.info(self.scalex)
-        logging.info(self.scaley)
+        self.logger.info("lblimage:"+str(self.pixmap().width())+"X"+str(self.pixmap().height()))
+        self.logger.info(self.scalex)
+        self.logger.info(self.scaley)
 
 
     def mouseInImage(self, x, y):
@@ -162,7 +163,7 @@ class ImageLabel(QLabel):
 
 
     def DrawImageResults(self, data, imagepic):
-        logging.info("DrawImageResults ++ " + str(self._camerapoisition))
+        self.logger.info("DrawImageResults ++ " + str(self._camerapoisition))
         ret=0
         self.imagedresult = ret
         if imagepic is not None:
@@ -170,7 +171,7 @@ class ImageLabel(QLabel):
         if self._imagepixmap == None or len(data)==0:
             self.imagedresult = ret
             return ret
-        logging.info(data)
+        self.logger.info(data)
         painterInstance = QPainter(self._imagepixmap)
         penRectangle = QPen(Qt.red)
         penRectangle.setWidth(12)
@@ -219,11 +220,11 @@ class ImageLabel(QLabel):
     def DrawImage(self, x, y, clr = Qt.red):
         # convert image file into pixmap
         #pixmap = QPixmap(self.filepath)
-        logging.info("draw:"+str(x)+"=>"+str(y)) 
+        self.logger.info("draw:"+str(x)+"=>"+str(y)) 
         if self._imagepixmap == None or not self._isProfile:
             return
         # create painter instance with pixmap
-        logging.info("source image:"+str(self._imagepixmap.width())+"=>"+str(self._imagepixmap.height())) 
+        self.logger.info("source image:"+str(self._imagepixmap.width())+"=>"+str(self._imagepixmap.height())) 
         try:
             painterInstance = QPainter(self._imagepixmap)
 
@@ -241,7 +242,7 @@ class ImageLabel(QLabel):
             self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
             painterInstance.end()
         except Exception as ex:
-            logging.info(str(ex))
+            self.logger.info(str(ex))
             pass
 
         #self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
@@ -251,7 +252,7 @@ class ImageLabel(QLabel):
             self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
 
     def mousePressEvent(self, evt):
-        logging.info("mousepress:"+str(evt.pos().x())+"=>"+str(evt.pos().y())) 
+        self.logger.info("mousepress:"+str(evt.pos().x())+"=>"+str(evt.pos().y())) 
         if self.mouseInImage(evt.pos().x(), evt.pos().y()):
             self.DrawImage(evt.pos().x()-self.imagel, evt.pos().y()-self.imaget)
 

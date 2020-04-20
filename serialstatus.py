@@ -18,6 +18,7 @@ class FDProtocol(serial.threaded.LineReader):
     def __init__(self):
         super(FDProtocol, self).__init__()
         self.alive = True
+        self.logger = logging.getLogger('PSILOG')
         #self.responses = queue.Queue()
         self.events = queue.Queue()
         self._event_thread = threading.Thread(target=self._run_event)
@@ -53,14 +54,15 @@ class FDProtocol(serial.threaded.LineReader):
                 #self.handle_event(self.events.get())
                 time.sleep(1)
             except:
-                logging.exception('_run_event')
+                self.logger.exception('_run_event')
     
     def handle_line(self, line):
         """
         Handle input from serial port, check for events.
         """
         m = re.search(r'^(.*?):[ ]?(\d+)$', line)
-        logging.info(line)
+        #self.logger.info(line)
+        #print(line)
         if m:
             if m.group(1) =="Proximity":
                 if int(m.group(2)) < self.proximityThreshold:
@@ -71,13 +73,14 @@ class FDProtocol(serial.threaded.LineReader):
                     self.proximityStatus = True
             elif m.group(1) == "Laser":
                 if int(m.group(2)) == 0:
+                    #self.logger.info("hand detected")
                     self.laserCount = 0
                     self.laser.set()
                     self.laserStatus = False
                 else:
                     self.laserCount += 1
                     if self.laserCount > 10:
-                        logging.info("hand removed")
+                        #self.logger.info("hand removed")
                         self.laser.clear()
                         self.laserStatus = True
 

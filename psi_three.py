@@ -54,14 +54,14 @@ class DrawPicThread(QThread):
 
     def run(self):
         import testrsync
-        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync++")
+        self.logger.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync++")
         #process = subprocess.Popen(["rsync", "-avzP", '--delete', '/tmp/ramdisk', "pi@192.168.1.16:/tmp/ramdisk"],
         #    stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         #process.stdin.write(b'qa\n')
         #process.communicate()[0]
         #process.wait()
         testrsync.rsync()
-        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync--")
+        self.logger.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync--")
         #process.stdin.close()
         self.imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % self.index)#pixmap
 
@@ -115,6 +115,7 @@ class UISettings(QDialog):
     resized = pyqtSignal()
     def __init__(self, parent=None):
         super(UISettings, self).__init__()
+        self.logger = logging.getLogger('PSILOG')
         home=os.path.expanduser("~")
         loadUi(home+'/Desktop/pyUI/psi_auto.ui', self)
         self.setWindowFlags(Qt.FramelessWindowHint)
@@ -194,7 +195,7 @@ class UISettings(QDialog):
             self.keyboardID = int(p.stdout.readline())
             threading.Thread(target=lambda : print(p.stdout.readline())).start()
             self.startKey = True
-            logging.debug("capturing window 0x%x ", self.keyboardID)
+            self.logger.debug("capturing window 0x%x ", self.keyboardID)
             embed_window = QtGui.QWindow.fromWinId(self.keyboardID)
             embed_widget = QtWidgets.QWidget.createWindowContainer(embed_window)
             embed_widget.setMinimumWidth(580)
@@ -311,7 +312,7 @@ class UISettings(QDialog):
 
     def PreviewCamera(self):
         # Create the in-memory stream
-        logging.info("preview: thread is starting...")
+        self.logger.info("preview: thread is starting...")
         self.stop_prv.clear()
         #while not self.stop_prv.is_set():
         stream = io.BytesIO()
@@ -339,10 +340,10 @@ class UISettings(QDialog):
             camera.close()
  
         self.stop_prv.clear()
-        logging.info("preview: thread ending...")
+        self.logger.info("preview: thread ending...")
 
     def _GetImageShow(self):
-        logging.info("preview: thread starting...")
+        self.logger.info("preview: thread starting...")
         self.lblStatus.setText("ready")
         self.lblStatus.setStyleSheet('''
         color: black
@@ -350,7 +351,7 @@ class UISettings(QDialog):
         self.imageTop.setImageScale() 
         self.stop_prv.clear()
         #logging.info(self.clientleft.startpause(False))
-        logging.info(self.clienttop.startpause(False))
+        self.logger.info(self.clienttop.startpause(False))
         while True:
             #data = self.clientleft.preview().data
             data = self.clienttop.preview().data
@@ -365,7 +366,7 @@ class UISettings(QDialog):
                 break
 
         self.stop_prv.clear()
-        logging.info("preview: thread ending...")
+        self.logger.info("preview: thread ending...")
 
 
     @pyqtSlot()
@@ -395,7 +396,7 @@ class UISettings(QDialog):
                 tr.join()
 
             except Exception as e:
-                logging.exception(str(e))
+                self.logger.exception(str(e))
             finally:
                 QApplication.restoreOverrideCursor() 
 
@@ -415,9 +416,9 @@ class UISettings(QDialog):
         dlg = Settings(self, self.clienttop, self.clientright)
         if dlg.exec_():
             self._loadConfigFile()
-            logging.info("Success!")
+            self.logger.info("Success!")
         else:
-            logging.info("Cancel!")  
+            self.logger.info("Cancel!")  
 
     @pyqtSlot()
     def on_click(self):
@@ -448,7 +449,7 @@ class UISettings(QDialog):
         cmd = "raspistill -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         if cam ==0:
             cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
-        logging.info(cmd)
+        self.logger.info(cmd)
         os.system(cmd)
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
@@ -457,13 +458,13 @@ class UISettings(QDialog):
 
     def _callyanfunction(self, index):
         self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-        logging.info('callyanfunction:' + self.profilename)
+        self.logger.info('callyanfunction:' + self.profilename)
         txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
         smplfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg")
-        logging.info(txtfilename)
-        logging.info(smplfilename)
+        self.logger.info(txtfilename)
+        self.logger.info(smplfilename)
         if os.path.exists(txtfilename) and os.path.exists(smplfilename):
-            logging.info("*testScrews**")
+            self.logger.info("*testScrews**")
             try:
                 self.imageresults = testScrew.testScrews(
                     txtfilename, 
@@ -473,8 +474,8 @@ class UISettings(QDialog):
                 self.imageresults = []
                 pass
             
-            logging.info("-testScrews end--")
-            logging.info(self.imageresults)
+            self.logger.info("-testScrews end--")
+            self.logger.info(self.imageresults)
 
     def _startdetectthread(self, index):
         self.yanthread = Process(target=self._callyanfunction, args=(index,))
@@ -483,7 +484,7 @@ class UISettings(QDialog):
 
     def _showImage(self, index, imagelabel):
         imagelabel.setImageScale()     
-        logging.info("Start testing %d" % index)
+        self.logger.info("Start testing %d" % index)
         if index==ImageLabel.CAMERA.TOP.value:
             self.clienttop.TakePicture(index, not self.checkBox.isChecked()) 
         elif index==ImageLabel.CAMERA.RIGHT.value:
@@ -491,7 +492,7 @@ class UISettings(QDialog):
         elif index == ImageLabel.CAMERA.LEFT.value:
             self.capture(index, not self.checkBox.isChecked())
 
-        logging.info("Start transfer %d" % index)
+        self.logger.info("Start transfer %d" % index)
         if self.checkBox.isChecked():
             if index==ImageLabel.CAMERA.LEFT.value:
                 imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
@@ -499,7 +500,7 @@ class UISettings(QDialog):
             else:
                 #data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
                 data = self.clienttop.imageDownload(index).data if index == ImageLabel.CAMERA.TOP.value else self.clientright.imageDownload(index).data
-                logging.info("end testing %d" % index)
+                self.logger.info("end testing %d" % index)
                 image = Image.open(io.BytesIO(data))
                 image.save("/tmp/ramdisk/temp_%d.jpg" % index)
                 #imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
@@ -526,19 +527,19 @@ class UISettings(QDialog):
         try:
             self._showImage(ImageLabel.CAMERA.LEFT.value, self.imageLeft)
         except Exception as ex:
-            logging.exception(str(ex))
+            self.logger.exception(str(ex))
             status = 5
 
-        logging.info("ending camera Left and transfer")
+        self.logger.info("ending camera Left and transfer")
 
     def _ThreadTakepictureRight(self):
         try:
             self._showImage(ImageLabel.CAMERA.RIGHT.value, self.imageRight)
         except Exception as ex:
-            logging.exception(str(ex))
+            self.logger.exception(str(ex))
             status = 5
 
-        logging.info("ending camera right and transfer")
+        self.logger.info("ending camera right and transfer")
 
 
     def _ThreadTakepicture(self):
@@ -548,12 +549,12 @@ class UISettings(QDialog):
         try:
             self._showImage(ImageLabel.CAMERA.TOP.value, self.imageTop)
         except Exception as ex:
-            logging.exception(str(ex))
+            self.logger.exception(str(ex))
             status = 5
         #finally:
         #    self.takelock.release()
 
-        logging.info("ending camera A and transfer")
+        self.logger.info("ending camera A and transfer")
         self.takepic.set()
 
     def testScrewResult(self, data):
@@ -625,11 +626,11 @@ class UISettings(QDialog):
             self.profileimages[ImageLabel.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
             self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
 
-            logging.info("Start testing click")
+            self.logger.info("Start testing click")
             if  self.checkBox.isChecked():
                 self.clienttop.setScrewSize(myconstdef.screwWidth, myconstdef.screwHeight)
                 self.clientright.setScrewSize(myconstdef.screwWidth, myconstdef.screwHeight)
-            logging.info("Start testing top")
+            self.logger.info("Start testing top")
             p = threading.Thread(target=self._ThreadTakepicture)
             p.start()
             pLeft = threading.Thread(target=self._ThreadTakepictureLeft)
@@ -637,28 +638,28 @@ class UISettings(QDialog):
             pRight = threading.Thread(target=self._ThreadTakepictureRight)
             pRight.start()
             p.join()
-            logging.info("Start end top")        
+            self.logger.info("Start end top")        
             pLeft.join()
-            logging.info("Start end left")        
+            self.logger.info("Start end left")        
             pRight.join()
-            logging.info("Start end right")        
+            self.logger.info("Start end right")        
             if not self.checkBox.isChecked():
                 status, status1, status2 = 0, 0, 0
                 #self.takepic.wait()
                 #self.takepic.clear()
                 try:
-                    logging.info("Start Draw Info")
+                    self.logger.info("Start Draw Info")
                     
                     threads=[]
                     ttop = threading.Thread(target=self.DrawResultTop)
                     ttop.start()
                     threads.append(ttop)
-                    logging.info("Draw top finish")
+                    self.logger.info("Draw top finish")
                     
                     tleft = threading.Thread(target=self.DrawResultLeft)
                     tleft.start()
                     threads.append(tleft)
-                    logging.info("Draw left finish")
+                    self.logger.info("Draw left finish")
 
                     tright = threading.Thread(target=self.DrawResultRight)
                     tright.start()
@@ -670,7 +671,7 @@ class UISettings(QDialog):
                     status = self.imageTop.imagedresult
                     status1 = self.imageLeft.imagedresult
                     status2 = self.imageRight.imagedresult
-                    logging.info("End Draw Info")
+                    self.logger.info("End Draw Info")
                 except :
                     status = 5
 
@@ -691,10 +692,10 @@ class UISettings(QDialog):
                     border-image: url(:/icons/no.png); 
                     ''')
 
-            logging.info("task finished")
+            self.logger.info("task finished")
 
         except Exception as e:
-            logging.exception(str(e))
+            self.logger.exception(str(e))
         finally:
             QApplication.restoreOverrideCursor() 
 
@@ -717,9 +718,9 @@ class UISettings(QDialog):
         time.sleep(0.1)
         window.tabWidget.setCurrentIndex(2)
         time.sleep(0.1)
-        logging.info(str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
+        self.logger.info(str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
         self.lblStatus.setFixedSize(self.lblStatus.width(),self.lblStatus.width())
-        logging.info("Status Size:"+str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
+        self.logger.info("Status Size:"+str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
         window.tabWidget.setCurrentIndex(0)
         self.serialThread.start()
         self.imageTop.setImageScale() 
@@ -735,10 +736,26 @@ class UISettings(QDialog):
             self.threadPreview= threading.Thread(target=self._GetImageShow)#self.PreviewCamera)
             self.threadPreview.start()
         
- 
+def CreateLog():
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    formatter = logging.Formatter('%(asctime)s-%(levelname)s-%(funcName)s(%(lineno)d) %(message)s')
+
+    logFile = '/tmp/ramdisk/psi.log'
+    handler = RotatingFileHandler(logFile, mode='a', maxBytes=1*1024*1024, 
+                                    backupCount=500, encoding=None, delay=False)
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.INFO)
+    logger = logging.getLogger('PSILOG')
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+    return logger
+
 if __name__ == "__main__":
     #%(threadName)s       %(thread)d
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s[%(thread)d] - %(levelname)s - %(message)s')
+    #logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s[%(thread)d] - %(levelname)s - %(message)s')
+    logger = CreateLog()
     app = QApplication(sys.argv)
     window = UISettings()
     
@@ -747,5 +764,5 @@ if __name__ == "__main__":
 
     threading.Thread(target=window.ChangeTab).start()
 
-    logging.info(str(window.width())+"X"+str(window.height()))   
+    logger.info(str(window.width())+"X"+str(window.height()))   
     sys.exit(app.exec_())

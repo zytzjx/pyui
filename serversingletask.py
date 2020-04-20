@@ -37,6 +37,7 @@ class ThreadXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
 
 class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     def __init__(self):
+        self.logger = logging.getLogger('PSILOG')
         self.imageresults=[[],[],[]]
         self.profilename=""
         self.rootprofielpath=""
@@ -54,7 +55,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         self.image_ready = io.BytesIO()
         self.lockyan=threading.Lock()
         self.yanthreads=[]
-        logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        #logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self._config={}
         self._tpreview =None
         self.IsPreviewing=False
@@ -70,7 +71,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _setactivecamera(self, index=0):
         if index==0:
-            logging.info("Start testing the camera A")
+            self.logger.info("Start testing the camera A")
             #i2c = "i2cset -y 1 0x70 0x00 0x04"
             #os.system(i2c)
             #gp.output(7, False)
@@ -79,7 +80,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _preview(self):
         while True:
-            logging.info("preview: thread is starting...")
+            self.logger.info("preview: thread is starting...")
             self.IsPreviewing=False
             self.pause_event.wait()
             self.IsPreviewing=True
@@ -120,7 +121,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             if self.quit_event.is_set():
                 self.IsPreviewing=False
                 break
-        logging.info("preview: thread is terminated")
+        self.logger.info("preview: thread is terminated")
 
     def preview(self):
         self.save_image_event.set()
@@ -132,15 +133,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def startpause(self, pause=True):
         if pause and self.IsPreviewing:
-            logging.info("pause:True, IsPreviewing:True")
+            self.logger.info("pause:True, IsPreviewing:True")
             self.pause_event.set()
         elif not pause and not self.IsPreviewing:
-            logging.info("pause:False, IsPreviewing:False")
+            self.logger.info("pause:False, IsPreviewing:False")
             self.pause_event.set()
             while not self.IsPreviewing:
                 time.sleep(0.01)
         else:
-            logging.info(str(pause)+":"+str(self.IsPreviewing))
+            self.logger.info(str(pause)+":"+str(self.IsPreviewing))
             pass
         return "OK"
 
@@ -157,7 +158,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def profilepath(self, rpp, pn):
         #global profilename, _profilepath
-        logging.info("call profilepath ++")
+        self.logger.info("call profilepath ++")
         if rpp and rpp!="":
             self.rootprofielpath=rpp
         if pn and pn!="":
@@ -174,7 +175,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             os.makedirs(pathtop, mode, True) 
         if not os.path.exists(pathright):
             os.makedirs(pathright, mode, True) 
-        logging.info("call profilepath -- " + self._profilepath)
+        self.logger.info("call profilepath -- " + self._profilepath)
         return self._profilepath
 
     def CloseServer(self):
@@ -183,20 +184,20 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def SyncRamdisks(self):
     #rsync -avzP --delete pi@192.168.1.12:/home/pi/Desktop/pyUI/profiles /home/pi/Desktop/pyui/profiles/
-        logging.info("call rsync++")
+        self.logger.info("call rsync++")
         subprocess.call(["rsync", "-avzP", '--delete', '/tmp/ramdisk/', "pi@192.168.1.16:/tmp/ramdisk"])
-        logging.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync--")
+        self.logger.info(datetime.now().strftime("%H:%M:%S.%f")+"   call rsync--")
 
 
     def _callyanfunction(self, index):
-        logging.info('callyanfunction:' +self.profilename)
+        self.logger.info('callyanfunction:' +self.profilename)
         txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
         smplfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg")
-        logging.info(txtfilename)
-        logging.info(smplfilename)
+        self.logger.info(txtfilename)
+        self.logger.info(smplfilename)
         if os.path.exists(txtfilename) and os.path.exists(smplfilename):
             self.lockyan.acquire()
-            logging.info("*testScrews**")
+            self.logger.info("*testScrews**")
             try:
                 dataresult = testScrew.testScrews(
                     txtfilename, 
@@ -207,9 +208,9 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
                 self.imageresults[index] = []
                 pass
             
-            logging.info("-testScrews end--")
+            self.logger.info("-testScrews end--")
             self.lockyan.release()
-            logging.info(self.imageresults[index])
+            self.logger.info(self.imageresults[index])
 
     def _startdetectthread(self, index):
         t1 = threading.Thread(target=self._callyanfunction, args=(index,))
@@ -359,11 +360,11 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
     #@pyjsonrpc.rpcmethod
     def TakePicture(self, index, IsDetect=True):
         if index==0:
-            logging.info("Start testing the camera A")
+            self.logger.info("Start testing the camera A")
         elif index == 1:
-            logging.info("Start testing the camera B")
+            self.logger.info("Start testing the camera B")
         else:
-            logging.info("Start testing the camera C")
+            self.logger.info("Start testing the camera C")
         return self.capture(index, IsDetect)
 
     def ResultTest(self, index):  
@@ -379,7 +380,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         if index<3:
             data = self.imageresults[index]
         ss = json.dumps(data)
-        logging.info(ss)
+        self.logger.info(ss)
         return ss
 
     def StartDaemon(self):
@@ -392,7 +393,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         try:
             shutil.rmtree(dirPath)
         except:
-            logging.error('Error while deleting directory')  
+            self.logger.error('Error while deleting directory')  
 
     def RenameProfile(self, source, target):
         dirPath=os.path.join(self.rootprofielpath, source)
@@ -400,11 +401,27 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         try:
             os.rename(dirPath, dirPath1)
         except:
-            logging.error('Error  renaming directory')  
+            self.logger.error('Error  renaming directory')  
 
+def CreateLog():
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    formatter = logging.Formatter('%(asctime)s-%(levelname)s-%(funcName)s(%(lineno)d) %(message)s')
+
+    logFile = '/tmp/ramdisk/psi.log'
+    handler = RotatingFileHandler(logFile, mode='a', maxBytes=1*1024*1024, 
+                                    backupCount=500, encoding=None, delay=False)
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.INFO)
+    logger = logging.getLogger('PSILOG')
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+    return logger
 
 if __name__ == '__main__':
     #app = QApplication([])
+    logger = CreateLog()
     ap = argparse.ArgumentParser()
     ap.add_argument("-style", "-style which camera[top left right]", type=str, required=True,
     	help="which camera")
@@ -415,9 +432,9 @@ if __name__ == '__main__':
     server.register_instance(handler)
     if args["style"] == 'top':
         handler.StartDaemon()
-    print ("Listening for Client")
+    logger.info("Listening for Client")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("Exiting")
+        logger.error("Exiting keyinterrupt")
     

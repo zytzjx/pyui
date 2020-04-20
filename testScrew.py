@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 import sys
 
+logger = logging.getLogger('PSILOG')
 
 def structural_sim(img_a, img_b):
   '''
@@ -105,10 +106,10 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
             corrcoefScore[i] = np.corrcoef(A.ravel(), B.ravel())[0][1]
             #roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
         else:
-            print(A.shape)
-            print(B.shape)
-            print('Size of test screw does not match size of profile...')
-            print('Or std of A or B is 0')
+            logger.error(A.shape)
+            logger.error(B.shape)
+            logger.error('Size of test screw does not match size of profile...')
+            logger.error('Or std of A or B is 0')
             corrcoefScore[i] = 0
             #roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
     maxScore = max(corrcoefScore)
@@ -118,10 +119,10 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
     return maxScore
 
 def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
-    logging.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews++")
-    logging.info("arg0 "+inputDeviceFileName)
-    logging.info("arg1 "+inputDeviceImageName)
-    logging.info("arg2 "+inputImageName)
+    logger.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews++")
+    logger.info("arg0 "+inputDeviceFileName)
+    logger.info("arg1 "+inputDeviceImageName)
+    logger.info("arg2 "+inputImageName)
     # current image
     bigImage = cv2.imread(inputImageName)
     # template image
@@ -150,7 +151,7 @@ def testScrews(inputDeviceFileName, inputDeviceImageName, inputImageName):
             maxScore = evaluateScrew(imgGray, roi_0, roi_1, roi_2, roi_3, imageTemplate)
             if maxScore < 0.45: 
                 resultList.append([maxScore, [roi_2, roi_3, roi_0, roi_1]])
-    logging.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews--")
+    logger.info(datetime.now().strftime("%H:%M:%S.%f")+"  testScrews--")
     ##filtered_numbers = [number for number in numbers if number < 3]
     return resultList
 
