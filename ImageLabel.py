@@ -114,10 +114,10 @@ class ImageLabel(QLabel):
         return False
 
     def _savescrew(self, pt):
-        screwLeft = myconstdef.screwWidth /2
-        screwRight = myconstdef.screwWidth - screwLeft
-        screwTop = myconstdef.screwHeight / 2
-        screwBottom = myconstdef.screwHeight - screwTop
+        screwLeft = int(myconstdef.screwWidth /2)
+        screwRight = int(myconstdef.screwWidth - screwLeft)
+        screwTop = int(myconstdef.screwHeight / 2)
+        screwBottom = int(myconstdef.screwHeight - screwTop)
         x = pt.x()-screwLeft if pt.x()-screwLeft > 0 else 0
         y = pt.y()-screwTop if pt.y()-screwTop > 0 else 0
 

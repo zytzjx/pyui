@@ -227,10 +227,10 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
 
     def _savescrew(self, index, pt):
         #h = a-b if a>b else a+b
-        screwLeft = self.screwW /2
-        screwRight = self.screwW - screwLeft
-        screwTop = self.screwH / 2
-        screwBottom = self.screwH - screwTop
+        screwLeft = int(self.screwW /2)
+        screwRight = int (self.screwW - screwLeft)
+        screwTop = int(self.screwH / 2)
+        screwBottom = int (self.screwH - screwTop)
         x = pt.x()-screwLeft if pt.x()-screwLeft > 0 else 0
         y = pt.y()-screwTop if pt.y()-screwTop > 0 else 0
  

@@ -264,8 +264,9 @@ class UISettings(QDialog):
 
     def closeEvent(self, event):
         self.stop_prv.set()
-        while self.threadPreview.is_alive():
-            time.sleep(0.1)
+        if self.threadPreview != None:
+            while self.threadPreview.is_alive():
+                time.sleep(0.1)
         self._shutdown()
         self.serialThread.exit_event.set()
         self.close()
