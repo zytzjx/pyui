@@ -100,7 +100,9 @@ class Settings(QDialog):
         self.sbPromixity.value = self.data['threhold']  if 'threhold' in self.data else 40000
         self.cbPreview.setChecked(self.data['preview'] if 'preview' in self.data else True)
         self.cbAutoDetect.setChecked(self.data["autostart"] if 'autostart' in self.data else True)
-        self.leProfilePath.setText(self.data["profilepath"] if 'profilepath' in self.data else '/home/pi/Desktop/pyUI/profiles')
+        self.leStationID.setText(self.data['stationid'])
+        spath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"profiles")
+        self.leProfilePath.setText(self.data["profilepath"] if 'profilepath' in self.data else spath)
 
 
     def _savedata(self):
@@ -112,6 +114,7 @@ class Settings(QDialog):
         self.data['preview'] = self.cbPreview.isChecked()
         self.data["autostart"] = self.cbAutoDetect.isChecked()
         self.data["profilepath"] = self.leProfilePath.text()
+        self.data['stationid'] = self.leStationID.text()
         with open('config.json', 'w') as outfile:
             json.dump(self.data, outfile)
 

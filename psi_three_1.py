@@ -116,8 +116,8 @@ class UISettings(QDialog):
     def __init__(self, parent=None):
         super(UISettings, self).__init__()
         self.logger = logging.getLogger('PSILOG')
-        spathUI = os.path.join(os.path.dirname(os.path.realpath(__file__)),"psi_new.ui")
-        loadUi(spathUI, self)
+        home=os.path.expanduser("~")
+        loadUi(home+'/Desktop/pyUI/psi_auto.ui', self)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.changeStyle('Fusion')
         self.pbClose.clicked.connect(self.closeEvent)
@@ -133,11 +133,8 @@ class UISettings(QDialog):
         self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
         self.checkBox.stateChanged.connect(self.btnstate)
         self.tabWidget.currentChanged.connect(self.on_CameraChange)
-
-        #self.leIMEI.setInputMask('9')
-        self.leIMEI.editingFinished.connect(self.on_imei_editfinished)
-        self.leModel.editingFinished.connect(self.on_model_editfinished)
-        #self.leProfile.hide()
+        self.comboBox.currentTextChanged.connect(self.OnChangeItem)
+        self.leProfile.hide()
         self.previewEvent = threading.Event()
         self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
         self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
@@ -175,48 +172,18 @@ class UISettings(QDialog):
         self.profileimages=["","",""]
         self.imageresults = []
         self.yanthread=None
-        self._profilepath=""  #with profile name
+        self._profilepath=""
         self.profilename=""
 
         self.imeidb=None
-        self.loadImeidb()
 
     def loadImeidb(self):
         if os.path.isfile('imei2model.json'):
             with open('imei2model.json') as json_file:
                 self.imeidb = json.load(json_file)
 
-    def ImeiQuery(self, imei):
-        #"cmc_maker": "Apple",
-        #"cmc_model": "iPhone3GS",
-        #"maker": "Apple",
-        #"model": "iPhone3GS",
-        if 'doc' in self.imeidb:
-            for item in self.imeidb['doc']:
-                if imei.startswith(item['uuid']):
-                    maker = item['maker'] if 'maker' in item else ''
-                    model = item['model'] if 'model' in item else ''
-                    cmc_maker = item['cmc_maker'] if 'cmc_maker' in item else ''
-                    cmc_model = item['cmc_model'] if 'cmc_model' in item else ''
-                    return (maker, model, cmc_maker, cmc_model)
-        return ('','','','')
+        
 
-    def _getProfileName(self):
-        self.profilename = ''
-        if self.leModel.text()!="" and self.leStationID.text()!='':
-            self.profilename = self.leModel.text() +'_'+self.leStationID.text()
-            self.config["phonemodel"] = self.leModel.text()
-            return True
-        return False
-
-    def on_imei_editfinished(self):
-        if len(self.leIMEI.text())>=8:
-            _,model,_,_ = self.ImeiQuery(self.leIMEI.text())
-            self.leModel.setText(model)
-            self._getProfileName()
-
-    def on_model_editfinished(self):
-        self._getProfileName()        
 
     def StatusChange(self, value):
         with self.takelock:
@@ -266,6 +233,17 @@ class UISettings(QDialog):
             pass
 
 
+    def OnChangeItem(self, value):
+        index = self.comboBox.currentIndex()
+        if(index>=0):
+            self.config['comboxindex'] = index
+        self._saveConfigFile()
+        
+        self.profileimages[0]=os.path.join(self.config["profilepath"], self.comboBox.currentText(), "top", self.comboBox.currentText()+".jpg")
+        self.profileimages[1]=os.path.join(self.config["profilepath"], self.comboBox.currentText(), "left", self.comboBox.currentText()+".jpg")
+        self.profileimages[2]=os.path.join(self.config["profilepath"], self.comboBox.currentText(), "right", self.comboBox.currentText()+".jpg")
+
+
     def _saveConfigFile(self):
         with open('config.json', 'w') as json_file:
             json.dump(self.config, json_file, indent=4)
@@ -283,12 +261,11 @@ class UISettings(QDialog):
         self.isAutoDetect = self.config["autostart"] if 'autostart' in self.config else True
         spath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"profiles")
         self.sProfilePath = self.config["profilepath"] if 'profilepath' in self.config else spath
-        self.leStationID.setText(self.config["stationid"] if 'stationid' in self.config else '1')
-        self.leModel.setText(self.config["phonemodel"] if 'phonemodel' in self.config else '')
         self.serialThread.setThrehold(self.config["threhold"] if 'threhold' in self.config else 20000)
 
 
     def createprofiledirstruct(self, profiename):
+        #self._loadConfigFile()
         #self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
         self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
@@ -316,9 +293,9 @@ class UISettings(QDialog):
 
     def updateProfile(self):
         self.createprofiledirstruct("")
-        #self._profilepath=self.config["profilepath"]
-        #self.comboBox.addItems([name for name in os.listdir(self._profilepath) if os.path.isdir(os.path.join(self._profilepath, name))])
-        #self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
+        self._profilepath=self.config["profilepath"]
+        self.comboBox.addItems([name for name in os.listdir(self._profilepath) if os.path.isdir(os.path.join(self._profilepath, name))])
+        self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
 
     @staticmethod
     def createSShServer():
@@ -410,19 +387,19 @@ class UISettings(QDialog):
             self.imageTop.isProfile = True
             self.imageLeft.isProfile = True
             self.imageRight.isProfile = True
-            #self.leProfile.show()
-            #self.comboBox.hide()
+            self.leProfile.show()
+            self.comboBox.hide()
         else:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             try:
                 self.imageTop.isProfile = False
                 self.imageLeft.isProfile = False
                 self.imageRight.isProfile = False
-                #self.leProfile.hide()
-                #self.comboBox.clear() 
-                #self.comboBox.addItems([name for name in os.listdir(self.config["profilepath"]) if os.path.isdir(os.path.join(self.config["profilepath"], name))])
-                #self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
-                #self.comboBox.show()
+                self.leProfile.hide()
+                self.comboBox.clear() 
+                self.comboBox.addItems([name for name in os.listdir(self.config["profilepath"]) if os.path.isdir(os.path.join(self.config["profilepath"], name))])
+                self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
+                self.comboBox.show()
                 tl = Process(target=self.runsyncprofiles, args=(True,))
                 tl.start()
                 tr = Process(target=self.runsyncprofiles, args=(False,))
@@ -492,7 +469,7 @@ class UISettings(QDialog):
             self._callyanfunction(cam)
 
     def _callyanfunction(self, index):
-        #self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+        self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
         self.logger.info('callyanfunction:' + self.profilename)
         txtfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".txt")
         smplfilename=os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg")
@@ -528,10 +505,9 @@ class UISettings(QDialog):
             self.capture(index, not self.checkBox.isChecked())
 
         self.logger.info("Start transfer %d" % index)
-        imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
         if self.checkBox.isChecked():
             if index==ImageLabel.CAMERA.LEFT.value:
-                #imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
+                imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index)#pixmap
             else:
                 #data = self.clientleft.imageDownload(index).data if index == 1 else self.clientright.imageDownload(index).data
@@ -543,7 +519,7 @@ class UISettings(QDialog):
                 #pixmap = QPixmap.fromImage(imageq)
                 imagelabel.imagepixmap = QPixmap("/tmp/ramdisk/temp_%d.jpg" % index)#pixmap
         else:
-            #imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
+            imagelabel.SetProfile(self.leProfile.text(), self.leProfile.text()+".jpg")
             if index==ImageLabel.CAMERA.LEFT.value:
                 imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index))
             else:
@@ -633,30 +609,22 @@ class UISettings(QDialog):
 
     @pyqtSlot()
     def on_startclick(self):
-        if self.profilename=="":
+        if self.leProfile.text()=="" and self.checkBox.isChecked():
             error_dialog = QtWidgets.QErrorMessage(self)
             error_dialog.showMessage('Oh no! Profile name is empty.') 
             return             
         
-        self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
-        if not self.checkBox.isChecked() and not os.path.exists(self._profilepath):
-            error_dialog = QtWidgets.QErrorMessage(self)
-            error_dialog.showMessage('Oh no! Create profile please.') 
-            return  
-
         self.stop_prv.set() 
         if self.stop_prv.is_set():
             time.sleep(0.1)  
 
-        if self.startKey:
-            self.ShowKeyBoard()
-
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            #self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
+            self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
             self.clientright.profilepath(self.config["profilepath"], self.profilename)        
             #self.clientleft.profilepath(self.config["profilepath"], self.profilename)
             self.clienttop.profilepath(self.config["profilepath"], self.profilename)
+            self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
             pathleft = os.path.join(self.config["profilepath"], self.profilename, "left")
             pathtop = os.path.join(self.config["profilepath"], self.profilename, "top")
             pathright = os.path.join(self.config["profilepath"], self.profilename, "right")
