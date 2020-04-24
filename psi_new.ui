@@ -329,14 +329,14 @@ font: 75 12pt &quot;MS Shell Dlg 2&quot;;</string>
                </size>
               </property>
               <property name="text">
-               <string>Image UP</string>
+               <string>Stop</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QPushButton" name="pbImageChangeDown">
               <property name="text">
-               <string>Image Down</string>
+               <string>Preview</string>
               </property>
              </widget>
             </item>

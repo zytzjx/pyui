@@ -62,7 +62,7 @@ class FDProtocol(serial.threaded.LineReader):
         """
         m = re.search(r'^(.*?):[ ]?(\d+)$', line)
         #self.logger.info(line)
-        #print(line)
+        print(line)
         if m:
             if m.group(1) =="Proximity":
                 if int(m.group(2)) < self.proximityThreshold:
@@ -78,9 +78,8 @@ class FDProtocol(serial.threaded.LineReader):
                     self.laser.set()
                     self.laserStatus = False
                 else:
-                    self.laserCount += 1
-                    if self.laserCount > 10:
-                        #self.logger.info("hand removed")
+                    self.laserCount+=1
+                    if self.laserCount>2:
                         self.laser.clear()
                         self.laserStatus = True
 

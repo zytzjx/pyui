@@ -224,6 +224,10 @@ class ImageLabel(QLabel):
         if self._imagepixmap == None or not self._isProfile:
             return
         # create painter instance with pixmap
+
+        realx = int (x * self.scalex)
+        realy = int (y * self.scaley)
+        self.logger.info("draw real point:"+str(x)+"=>"+str(y)) 
         self.logger.info("source image:"+str(self._imagepixmap.width())+"=>"+str(self._imagepixmap.height())) 
         try:
             painterInstance = QPainter(self._imagepixmap)
@@ -234,8 +238,8 @@ class ImageLabel(QLabel):
 
             # draw rectangle on painter
             painterInstance.setPen(penRectangle)
-            painterInstance.drawEllipse(QPoint(x * self.scalex, y*self.scaley),25,25)
-            painterInstance.drawText(QPoint(x * self.scalex+25, y*self.scaley+25), str(self._indexscrew))
+            painterInstance.drawEllipse(QPoint(realx, realy),25,25)
+            painterInstance.drawText(QPoint(realx+25, realy+25), str(self._indexscrew))
             #self.ProfilePoint.append(QPoint(x * self.scalex, y*self.scaley))
 
             # set pixmap onto the label widget
@@ -247,9 +251,9 @@ class ImageLabel(QLabel):
 
         #self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
         if self._camerapoisition == CAMERA.LEFT:
-            self._savescrew(QPoint(x * self.scalex, y*self.scaley))
+            self._savescrew(QPoint(realx, realy))
         else:
-            self._client.CreateSamplePoint(self._camerapoisition.value, x * self.scalex, y*self.scaley)
+            self._client.CreateSamplePoint(self._camerapoisition.value, realx, realy)
 
     def mousePressEvent(self, evt):
         self.logger.info("mousepress:"+str(evt.pos().x())+"=>"+str(evt.pos().y())) 

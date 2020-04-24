@@ -100,7 +100,7 @@ class Settings(QDialog):
         self.sbPromixity.value = self.data['threhold']  if 'threhold' in self.data else 40000
         self.cbPreview.setChecked(self.data['preview'] if 'preview' in self.data else True)
         self.cbAutoDetect.setChecked(self.data["autostart"] if 'autostart' in self.data else True)
-        self.leStationID.setText(self.data['stationid'])
+        self.leStationID.setText(self.data['stationid'] if 'stationid' in self.data else '1')
         spath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"profiles")
         self.leProfilePath.setText(self.data["profilepath"] if 'profilepath' in self.data else spath)
 
@@ -108,9 +108,9 @@ class Settings(QDialog):
     def _savedata(self):
         self.data['cw'] = int(self.leWidth.text())
         self.data['ch'] = int(self.leHeight.text())
-        self.data['screww'] = self.sbScrewWidth.value
-        self.data['screwh'] = self.sbScrewHeight.value
-        self.data['threhold'] = self.sbPromixity.value
+        self.data['screww'] = int(self.sbScrewWidth.text())
+        self.data['screwh'] = int(self.sbScrewHeight.text())
+        self.data['threhold'] = int(self.sbPromixity.text())
         self.data['preview'] = self.cbPreview.isChecked()
         self.data["autostart"] = self.cbAutoDetect.isChecked()
         self.data["profilepath"] = self.leProfilePath.text()
