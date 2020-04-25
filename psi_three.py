@@ -465,6 +465,8 @@ class UISettings(QDialog):
     @pyqtSlot()
     def on_settingclick(self):
         #dlg = Settings(self, self.clientleft, self.clientright)
+        self.stop_prv.set() 
+
         dlg = Settings(self.clienttop, self.clientright, self)
         if dlg.exec_():
             self._loadConfigFile()
@@ -674,6 +676,8 @@ class UISettings(QDialog):
                 continue
             pre, ext = os.path.splitext(imageName)
             screwTxt = pre+'.txt'
+            if not os.path.exists(screwTxt):
+                continue
             centerpoint=[]
             with open(screwTxt) as f:
                 for line in f:

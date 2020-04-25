@@ -95,21 +95,15 @@ def evaluateScrew(bigImage, roi_0, roi_1, roi_2, roi_3, imageTemplate):
         new_roi_1 = new_roi_0 + width
         new_roi_2 = int(roi_2 + tr_y)
         new_roi_3 = new_roi_2 + height
-        new_roi_1_2 = int(roi_1 + tr_x)
-        new_roi_3_2 = int(roi_3 + tr_x)
         if (new_roi_0 > 0 and new_roi_1 < cols and new_roi_2 >0 and new_roi_3 < rows):
             img = bigImage[new_roi_0: new_roi_1, new_roi_2: new_roi_3]
-            testimg = bigImage[new_roi_0: new_roi_1_2, new_roi_2: new_roi_3_2]
         else:
             img = bigImage[roi_0: roi_1, roi_2: roi_3]
         # Cross correlation coefficient
         A = np.array(imageTemplate)
         B = np.array(img)
-        testC = np.array(testimg)
         if A.shape == B.shape and np.std(A.ravel()) > 0.0000000001 and np.std(B.ravel()) > 0.0000000001:
             corrcoefScore[i] = np.corrcoef(A.ravel(), B.ravel())[0][1]
-            logger.info(A.shape)
-            logger.info(testC.shape)
             #roiList.append([new_roi_0, new_roi_1, new_roi_2, new_roi_3])
         else:
             logger.error(A.shape)

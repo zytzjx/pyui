@@ -75,6 +75,7 @@ class Settings(QDialog):
     def On_Delete(self):
         if self.listWidget.currentRow()>=0:     
             proname = self.listWidget.currentItem().text()
+            self.logger.info("delete:"+proname)            
             self.leftProxy.RemoveProfile(proname)
             self.rightProxy.RemoveProfile(proname)
             dirPath=os.path.join(self.data["profilepath"], proname)
