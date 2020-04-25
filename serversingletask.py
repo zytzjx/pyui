@@ -275,45 +275,12 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             self._imagepixmapback = Image.open(filename)#QPixmap(filename)
         self._savescrew(index, QPoint(x,y))
 
-    #@pyjsonrpc.rpcmethod
     def updateProfile(self, ppath):
         if not ppath or ppath=="":
             curpath=os.path.abspath(os.path.dirname(sys.argv[0]))
             ppath=os.path.join(curpath,"profiles")
         return [name for name in os.listdir(ppath) if os.path.isdir(os.path.join(ppath, name))]
 
-    '''
-    #@pyjsonrpc.rpcmethod
-    def Init(self):
-        gp.setwarnings(False)
-        gp.setmode(gp.BOARD)
-
-        gp.setup(7, gp.OUT)
-        gp.setup(11, gp.OUT)
-        gp.setup(12, gp.OUT)
-
-        gp.setup(15, gp.OUT)
-        gp.setup(16, gp.OUT)
-        gp.setup(21, gp.OUT)
-        gp.setup(22, gp.OUT)
-
-        gp.output(11, True)
-        gp.output(12, True)
-        gp.output(15, True)
-        gp.output(16, True)
-        gp.output(21, True)
-        gp.output(22, True)
-
-        self._StartDaemon()
-    
-    #@pyjsonrpc.rpcmethod
-    def Uninit(self):
-        gp.output(7, False)
-        gp.output(11, False)
-        gp.output(12, True)
-
-        self._shutdownpreview()
-    '''
 
     def _DirSub(self, argument):
         switcher = {
@@ -322,23 +289,6 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             2: "right",
         }
         return switcher.get(argument, "Invalid")
-
-    '''
-    def _ChangeImageSize(self, index, scale_percent=25):
-        import cv2
-        cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % index
-        img = cv2.imread(cmd, cv2.IMREAD_UNCHANGED) 
-        print('Original Dimensions : ',img.shape) 
-        #scale_percent = 220 # percent of original size
-        width = int(img.shape[1] * scale_percent / 100)
-        height = int(img.shape[0] * scale_percent / 100)
-        dim = (width, height)
-        # resize image
-        resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
-        filename = "/tmp/ramdisk/compressimage_%d.jpg" % index
-        cv2.imwrite(filename, img, [cv2.IMWRITE_JPEG_QUALITY, 30]) 
-        return filename
-    '''        
 
     def imageDownload(self, cam, IsDetect=True):
         cmd = "/tmp/ramdisk/phoneimage_%d.jpg" % cam

@@ -8,7 +8,7 @@ from PIL import Image
 from PIL.ImageQt import ImageQt
 from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal
 from PyQt5 import QtWidgets,  QtGui
-from PyQt5.QtWidgets import (QApplication, QDialog, QStyleFactory, QLineEdit, QHBoxLayout)
+from PyQt5.QtWidgets import (QApplication, QDialog, QStyleFactory, QLineEdit, QHBoxLayout, QMessageBox)
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
 from PyQt5.uic import loadUi
 import logging
@@ -72,11 +72,12 @@ class DrawPicThread(QThread):
 class StatusCheckThread(QThread):
 #https://kushaldas.in/posts/pyqt5-thread-example.html
     signal = pyqtSignal(int)
-    def __init__(self):
-        QThread.__init__(self)
+    def __init__(self, myvar, parent=None):
+        QThread.__init__(self, parent)        
         self.serialport = "/dev/ttyUSB0"
         self.exit_event = threading.Event()
-        self.threhold = 8000
+        self.mylock = myvar
+        self.threhold = 40000
 
     def setThrehold(self, value):
         self.threhold = value
@@ -100,9 +101,10 @@ class StatusCheckThread(QThread):
                 elif not statusser.laserStatus:
                     if status != 3:
                         status = 3
-                if oldstatus!=status:
-                    self.signal.emit(status)
-                    oldstatus = status
+                if not self.mylock.locked():
+                    if oldstatus != status:
+                        self.signal.emit(status)
+                        oldstatus = status
                 #time.sleep(0.05)
                 self.msleep(50)
             statusser.stop()
@@ -120,11 +122,15 @@ class UISettings(QDialog):
         loadUi(spathUI, self)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.changeStyle('Fusion')
+        self.takelock=threading.Lock()
+        self.takepic=threading.Event()
+        self.stop_prv = threading.Event()
+
         self.pbClose.clicked.connect(self.closeEvent)
         self.pbImageChange.clicked.connect(self.on_click)
         self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
-        self.serialThread = StatusCheckThread()
+        self.serialThread = StatusCheckThread(self.takelock)
         self.config=settings.DEFAULTCONFIG
         self._loadConfigFile()
         self.updateProfile()
@@ -142,9 +148,6 @@ class UISettings(QDialog):
         self.imageTop.SetCamera(ImageLabel.CAMERA.TOP)
         self.imageLeft.SetCamera(ImageLabel.CAMERA.LEFT)
         self.imageRight.SetCamera(ImageLabel.CAMERA.RIGHT)
-        self.takelock=threading.Lock()
-        self.takepic=threading.Event()
-        self.stop_prv = threading.Event()
         self.startKey =False
         #self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
         self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
@@ -206,6 +209,7 @@ class UISettings(QDialog):
         if self.leModel.text()!="" and self.leStationID.text()!='':
             self.profilename = self.leModel.text() +'_'+self.leStationID.text()
             self.config["phonemodel"] = self.leModel.text()
+            self._saveConfigFile()
             return True
         return False
 
@@ -219,16 +223,19 @@ class UISettings(QDialog):
         self._getProfileName()        
 
     def StatusChange(self, value):
-        with self.takelock:
-            print("value is :"+str(value))
-            if (value == 2):
-                self.OnPreview()
-            elif(value == 1):
-                if self.isAutoDetect:
-                    self.previewEvent.set() 
-                    #start process
-                    self.on_startclick()
-   
+        if self.checkBox.isChecked():
+            return
+        self.takelock.acquire()
+        print("value is :"+str(value))
+        if (value == 2):
+            self.OnPreview()
+        elif(value == 1):
+            if self.isAutoDetect:
+                self.previewEvent.set() 
+                #start process
+                self.on_startclick()
+        self.takelock.release()
+
     #@staticmethod
     def createKeyboard(self):
         #subprocess.Popen(["killall","matchbox-keyboa"])
@@ -379,10 +386,14 @@ class UISettings(QDialog):
 
     def _GetImageShow(self):
         self.logger.info("preview: thread starting...")
+        #self.imageTop.clear()
+        #self.imageLeft.clear()
+        #self.imageRight.clear()
         self.lblStatus.setText("ready")
         self.lblStatus.setStyleSheet('''
         color: black
         ''')
+        
         self.imageTop.setImageScale() 
         self.stop_prv.clear()
         #logging.info(self.clientleft.startpause(False))
@@ -397,7 +408,13 @@ class UISettings(QDialog):
             if self.stop_prv.is_set():
                 self.stop_prv.clear()
                 #self.clientleft.startpause(True)
-                self.clienttop.startpause(True)
+                for i in range(0,2):
+                    while True:
+                        try:
+                            self.clienttop.startpause(True)
+                        except :
+                            continue
+                        break
                 break
 
         self.stop_prv.clear()
@@ -448,19 +465,27 @@ class UISettings(QDialog):
     @pyqtSlot()
     def on_settingclick(self):
         #dlg = Settings(self, self.clientleft, self.clientright)
-        dlg = Settings(self, self.clienttop, self.clientright)
+        dlg = Settings(self.clienttop, self.clientright, self)
         if dlg.exec_():
             self._loadConfigFile()
             self.logger.info("Success!")
         else:
             self.logger.info("Cancel!")  
 
+
+    def __jason(self):
+        self.isAutoDetect = False
+        while True:
+            self.on_startclick()
+            time.sleep(2)
+
     @pyqtSlot()
     def on_click(self):
         sender = self.sender()
         clickevent = sender.text()
-        if clickevent == u'Image UP':
+        if clickevent == u'Stop':
             self.stop_prv.set() 
+            threading.Thread(target=self.__jason).start()
         else:
             self.OnPreview()
     
@@ -520,12 +545,19 @@ class UISettings(QDialog):
     def _showImage(self, index, imagelabel):
         imagelabel.setImageScale()     
         self.logger.info("Start testing %d" % index)
-        if index==ImageLabel.CAMERA.TOP.value:
-            self.clienttop.TakePicture(index, not self.checkBox.isChecked()) 
-        elif index==ImageLabel.CAMERA.RIGHT.value:
-            self.clientright.TakePicture(index, not self.checkBox.isChecked())  
-        elif index == ImageLabel.CAMERA.LEFT.value:
-            self.capture(index, not self.checkBox.isChecked())
+        for iretry in range(0,1):
+            while True:
+                try:
+                    if index==ImageLabel.CAMERA.TOP.value:
+                        self.clienttop.TakePicture(index, not self.checkBox.isChecked()) 
+                    elif index==ImageLabel.CAMERA.RIGHT.value:
+                        self.clientright.TakePicture(index, not self.checkBox.isChecked())  
+                    elif index == ImageLabel.CAMERA.LEFT.value:
+                        self.capture(index, not self.checkBox.isChecked())
+                except :
+                    time.sleep(0.1)  
+                    continue
+                break
 
         self.logger.info("Start transfer %d" % index)
         imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
@@ -630,45 +662,103 @@ class UISettings(QDialog):
             #status2 = self.testScrewResult(data)
             status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[ImageLabel.CAMERA.RIGHT.value]))
 
+    def _loadProfile(self):
+        #self.profileimages[ImageLabel.CAMERA.TOP.value]=os.path.join(pathtop,  self.profilename+".jpg")
+        #self.profileimages[ImageLabel.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
+        #self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
+        #pre, ext = os.path.splitext(renamee)
+        #os.rename(renamee, pre + new_extension)
+        for i in ImageLabel.CAMERA:
+            imageName = self.profileimages[i.value]
+            if not os.path.exists(imageName):
+                continue
+            pre, ext = os.path.splitext(imageName)
+            screwTxt = pre+'.txt'
+            centerpoint=[]
+            with open(screwTxt) as f:
+                for line in f:
+                    words = line.split()                    
+                    roi_0 = int(words[1][:-1])
+                    roi_1 = int(words[2][:-1])
+                    roi_2 = int(words[3][:-1])
+                    roi_3 = int(words[4])
+                    x = roi_0 + int((roi_1 - roi_0 + 1)/2)
+                    y = roi_2 + int((roi_3 - roi_2 + 1)/2)
+                    centerpoint.append((x,y))
+            
+            if i == ImageLabel.CAMERA.TOP :
+                self.imageTop.DrawImageProfile(centerpoint, QPixmap(imageName))
+            elif i == ImageLabel.CAMERA.LEFT :
+                self.imageLeft.DrawImageProfile(centerpoint, QPixmap(imageName))
+            elif i == ImageLabel.CAMERA.RIGHT :
+                self.imageRight.DrawImageProfile(centerpoint, QPixmap(imageName))
+
+
 
     @pyqtSlot()
     def on_startclick(self):
+        self._getProfileName()
         if self.profilename=="":
-            error_dialog = QtWidgets.QErrorMessage(self)
-            error_dialog.showMessage('Oh no! Profile name is empty.') 
+            #error_dialog = QtWidgets.QErrorMessage(self)
+            #error_dialog.showMessage('Oh no! Profile name is empty.') 
+            QMessageBox.question(self, 'Error', "Oh no! Profile name is empty.", QMessageBox.Cancel, QMessageBox.Cancel)
             return             
         
-        self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
-        if not self.checkBox.isChecked() and not os.path.exists(self._profilepath):
-            error_dialog = QtWidgets.QErrorMessage(self)
-            error_dialog.showMessage('Oh no! Create profile please.') 
-            return  
+        self.imageTop.clear()
+        self.imageLeft.clear()
+        self.imageRight.clear()
+
+        pathleft = os.path.join(self.config["profilepath"], self.profilename, "left")
+        pathtop = os.path.join(self.config["profilepath"], self.profilename, "top")
+        pathright = os.path.join(self.config["profilepath"], self.profilename, "right")
+            
+        self.profileimages[ImageLabel.CAMERA.TOP.value]=os.path.join(pathtop,  self.profilename+".jpg")
+        self.profileimages[ImageLabel.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
+        self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
 
         self.stop_prv.set() 
         if self.stop_prv.is_set():
             time.sleep(0.1)  
 
+        self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
+        if not self.checkBox.isChecked() and not os.path.exists(self._profilepath):
+            QMessageBox.question(self, 'Error', "Oh no! Create profile please.", QMessageBox.Cancel, QMessageBox.Cancel)
+            return  
+
+        if self.checkBox.isChecked() and os.path.exists(self._profilepath):
+            buttonReply = QMessageBox.question(self, 'Info', "Profile Exists. Do you want to the profile?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
+            if buttonReply == QMessageBox.Cancel:
+                return  
+            if buttonReply == QMessageBox.Yes:
+                self._loadProfile()
+                return
+            if buttonReply == QMessageBox.No:
+                pass
+
+
+        if self.checkBox.isChecked():
+            mode = 0o777
+            os.makedirs(pathleft, mode, True) 
+            os.makedirs(pathtop, mode, True) 
+            os.makedirs(pathright, mode, True) 
+
+        
         if self.startKey:
             self.ShowKeyBoard()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             #self.profilename= self.leProfile.text() if self.checkBox.isChecked() else self.comboBox.currentText()
-            self.clientright.profilepath(self.config["profilepath"], self.profilename)        
             #self.clientleft.profilepath(self.config["profilepath"], self.profilename)
-            self.clienttop.profilepath(self.config["profilepath"], self.profilename)
-            pathleft = os.path.join(self.config["profilepath"], self.profilename, "left")
-            pathtop = os.path.join(self.config["profilepath"], self.profilename, "top")
-            pathright = os.path.join(self.config["profilepath"], self.profilename, "right")
-            if self.checkBox.isChecked():
-                mode = 0o777
-                os.makedirs(pathleft, mode, True) 
-                os.makedirs(pathtop, mode, True) 
-                os.makedirs(pathright, mode, True) 
-                
-            self.profileimages[ImageLabel.CAMERA.TOP.value]=os.path.join(pathtop,  self.profilename+".jpg")
-            self.profileimages[ImageLabel.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
-            self.profileimages[ImageLabel.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
+            try:
+                self.clientright.profilepath(self.config["profilepath"], self.profilename)        
+            except:
+                pass
+            
+            try:
+                self.clienttop.profilepath(self.config["profilepath"], self.profilename)
+            except:
+                pass
 
             self.logger.info("Start testing click")
             if  self.checkBox.isChecked():
@@ -715,7 +805,7 @@ class UISettings(QDialog):
                     status = self.imageTop.imagedresult
                     status1 = self.imageLeft.imagedresult
                     status2 = self.imageRight.imagedresult
-                    self.logger.info("End Draw Info")
+                    self.logger.info("End Draw Info:%d:%d:%d"%(status, status1, status2))
                 except :
                     status = 5
 

@@ -1,5 +1,5 @@
-screwWidth = 20
-screwHeight = 20
+screwWidth = 40
+screwHeight = 40
 
 IP='192.168.1.12'
 URL='http://%s:8888' % IP

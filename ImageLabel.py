@@ -197,6 +197,30 @@ class ImageLabel(QLabel):
         logging.info("DrawImageResults -- ")
         return ret
 
+    def DrawImageProfile(self, data, imagepic):
+        self.logger.info("DrawImageProfile ++ " + str(self._camerapoisition))
+        ret=0
+        if imagepic is not None:
+            self._imagepixmap = imagepic
+        if self._imagepixmap == None or len(data)==0:
+            return ret
+        self.logger.info(data)
+        painterInstance = QPainter(self._imagepixmap)
+        penRectangle = QPen(Qt.red)
+        penRectangle.setWidth(6)
+        painterInstance.setPen(penRectangle)
+
+        for pt in data:
+            # draw rectangle on painter
+            painterInstance.drawEllipse(QPoint(pt[0],pt[1]),myconstdef.screwWidth,myconstdef.screwHeight)
+
+        self.setPixmap(self._imagepixmap.scaled(self.w,self.h, Qt.KeepAspectRatio, Qt.SmoothTransformation))    
+        painterInstance.end()
+        self.imagedresult = ret
+        logging.info("DrawImageProfile -- ")
+        return ret
+
+
     def DrawImageResult(self, location, clr = Qt.red):
         if self._imagepixmap == None:
             return
@@ -238,8 +262,8 @@ class ImageLabel(QLabel):
 
             # draw rectangle on painter
             painterInstance.setPen(penRectangle)
-            painterInstance.drawEllipse(QPoint(realx, realy),25,25)
-            painterInstance.drawText(QPoint(realx+25, realy+25), str(self._indexscrew))
+            painterInstance.drawEllipse(QPoint(realx, realy),myconstdef.screwWidth,myconstdef.screwHeight)
+            painterInstance.drawText(QPoint(realx+myconstdef.screwWidth, realy+myconstdef.screwHeight), str(self._indexscrew))
             #self.ProfilePoint.append(QPoint(x * self.scalex, y*self.scaley))
 
             # set pixmap onto the label widget

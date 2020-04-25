@@ -8,6 +8,7 @@ import os.path
 from xmlrpc.client import ServerProxy
 import xmlrpc.client
 import myconstdef
+import shutil
 
 
 
@@ -28,6 +29,7 @@ class Settings(QDialog):
         y = (screenGeometry.height() - self.height()) / 2
         self.move(x, y)
         self.data=DEFAULTCONFIG
+        self.logger = logging.getLogger('PSILOG')
         if os.path.isfile('config.json'):
             with open('config.json') as json_file:
                 self.data = json.load(json_file)
@@ -71,15 +73,33 @@ class Settings(QDialog):
     
     @pyqtSlot()
     def On_Delete(self):
-        if self.listWidget.currentRow()>=0:         
-            self.leftProxy.RemoveProfile(repr(self.listWidget.selectedItems()))
-            self.rightProxy.RemoveProfile(repr(self.listWidget.selectedItems()))
+        if self.listWidget.currentRow()>=0:     
+            proname = self.listWidget.currentItem().text()
+            self.leftProxy.RemoveProfile(proname)
+            self.rightProxy.RemoveProfile(proname)
+            dirPath=os.path.join(self.data["profilepath"], proname)
+            try:
+                shutil.rmtree(dirPath)
+            except Exception as e:
+                print(e)
+                self.logger.exception(str(e))
+                self.logger.error('Error while deleting directory')
+            self.listWidget.takeItem(self.listWidget.currentRow())
     
     @pyqtSlot()
-    def On_Rename(self, newname):
-        if self.listWidget.currentRow()>=0:         
-            self.leftProxy.RenameProfile(repr(self.listWidget.selectedItems()), newname)
-            self.rightProxy.RenameProfile(repr(self.listWidget.selectedItems()), newname)
+    def On_Rename(self):
+        newname="aaaa"
+        if self.listWidget.currentRow()>=0:    
+            proname = self.listWidget.currentItem().text()     
+            self.leftProxy.RenameProfile(proname, newname)
+            self.rightProxy.RenameProfile(proname, newname)
+            dirPath=os.path.join(self.data["profilepath"], proname)
+            dirPath1=os.path.join(self.data["profilepath"], newname)
+            try:
+                os.rename(dirPath, dirPath1)
+            except:
+                self.logger.error('Error  renaming directory')  
+
 
     @pyqtSlot()
     def On_DirClick(self):
@@ -95,9 +115,9 @@ class Settings(QDialog):
     def _loaddata(self):
         self.leWidth.setText(str(self.data['cw']) if 'cw' in self.data else 3280)
         self.leHeight.setText(str(self.data['ch']) if 'ch' in self.data else 2464)
-        self.sbScrewWidth.value = self.data['screww'] if 'screww' in self.data else 40
-        self.sbScrewHeight.value = self.data['screwh']  if 'screwh' in self.data else 40
-        self.sbPromixity.value = self.data['threhold']  if 'threhold' in self.data else 40000
+        self.sbScrewWidth.setValue(self.data['screww'] if 'screww' in self.data else 40)
+        self.sbScrewHeight.setValue(self.data['screwh']  if 'screwh' in self.data else 40)
+        self.sbPromixity.setValue(self.data['threhold']  if 'threhold' in self.data else 40000)
         self.cbPreview.setChecked(self.data['preview'] if 'preview' in self.data else True)
         self.cbAutoDetect.setChecked(self.data["autostart"] if 'autostart' in self.data else True)
         self.leStationID.setText(self.data['stationid'] if 'stationid' in self.data else '1')
@@ -108,9 +128,9 @@ class Settings(QDialog):
     def _savedata(self):
         self.data['cw'] = int(self.leWidth.text())
         self.data['ch'] = int(self.leHeight.text())
-        self.data['screww'] = int(self.sbScrewWidth.text())
-        self.data['screwh'] = int(self.sbScrewHeight.text())
-        self.data['threhold'] = int(self.sbPromixity.text())
+        self.data['screww'] = self.sbScrewWidth.value()
+        self.data['screwh'] = self.sbScrewHeight.value()
+        self.data['threhold'] = self.sbPromixity.value()
         self.data['preview'] = self.cbPreview.isChecked()
         self.data["autostart"] = self.cbAutoDetect.isChecked()
         self.data["profilepath"] = self.leProfilePath.text()
