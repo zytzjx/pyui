@@ -92,7 +92,9 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             stream = io.BytesIO()
             with picamera.PiCamera() as camera:
                 camera.ISO = 50
-                camera.resolution=(640,480)
+                #camera.resolution=(640,480)
+                camera.resolution=(480,640)
+                camera.rotation = 270
                 #camera.start_preview()
                 #time.sleep(2)
                 for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
@@ -297,14 +299,18 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return xmlrpc.client.Binary(handle.read())
     
     def capture(self, cam, IsDetect=True):
-        cmd = "raspistill -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        cmd = "raspistill -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/rawimage_%d.jpg" % cam
         if cam ==0:
-            cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+            cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/rawimage_%d.jpg" % cam
         os.system(cmd)
+        im = Image.open("/tmp/ramdisk/rawimage_%d.jpg" % cam)
+        #rotate image by 90 degrees
+        angle = 270
+        out = im.rotate(angle, expand=True)
+        out.save("/tmp/ramdisk/phoneimage_%d.jpg" % cam)
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
         else:
-            #self._startdetectthread(cam)
             self._callyanfunction(cam)
 
     #@pyjsonrpc.rpcmethod
