@@ -118,39 +118,30 @@ class UISettings(QDialog):
     def __init__(self, parent=None):
         super(UISettings, self).__init__()
         self.logger = logging.getLogger('PSILOG')
-        spathUI = os.path.join(os.path.dirname(os.path.realpath(__file__)),"psi_auto.ui")
+        spathUI = os.path.join(os.path.dirname(os.path.realpath(__file__)),"psi_new.ui")
         loadUi(spathUI, self)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.changeStyle('Fusion')
-        self.takelock = threading.Lock()
-        self.takepic = threading.Event()
+        self.takelock=threading.Lock()
+        self.takepic=threading.Event()
         self.stop_prv = threading.Event()
 
         self.pbClose.clicked.connect(self.closeEvent)
-        self.tabImages.tabBar().hide()
-        self.tabSetting.tabBar().hide()
-        self.tabAllSetting.tabBar().hide()
-        self.leUserID.setText("12345")
-        self.pbTop.clicked.connect(self.on_CameraChange)
-        self.pbLeft.clicked.connect(self.on_CameraChange)
-        self.pbRight.clicked.connect(self.on_CameraChange)
-        self.pbtabDryrun.clicked.connect(self.On_settingChange)
-        self.pbtabSetting.clicked.connect(self.On_settingChange)
-        self.pbtabProfile.clicked.connect(self.On_settingChange)
-        self.pbExitSetting.clicked.connect(self.On_ExitSettingMode)
-
+        self.pbImageChange.clicked.connect(self.on_click)
+        self.pbImageChangeDown.clicked.connect(self.on_click)
         self.pbStart.clicked.connect(self.on_startclick)
         self.serialThread = StatusCheckThread(self.takelock)
         self.config=settings.DEFAULTCONFIG
         self._loadConfigFile()
         self.updateProfile()
         #self.resized.connect(self.someFunction)
-        #self.pbSetting.clicked.connect(self.on_settingclick)
-        #self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
-        self.cbAutoStart.stateChanged.connect(self.btnstate)
+        self.pbSetting.clicked.connect(self.on_settingclick)
+        self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
+        self.checkBox.stateChanged.connect(self.btnstate)
+        self.tabWidget.currentChanged.connect(self.on_CameraChange)
 
         #self.leIMEI.setInputMask('9')
-        self.leDeviceID.editingFinished.connect(self.on_imei_editfinished)
+        self.leIMEI.editingFinished.connect(self.on_imei_editfinished)
         self.leModel.editingFinished.connect(self.on_model_editfinished)
         #self.leProfile.hide()
         self.previewEvent = threading.Event()
@@ -162,12 +153,15 @@ class UISettings(QDialog):
         self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
         self.clientright = ServerProxy(myconstdef.URL_RIGHT, allow_none=True)
         self.setStyleSheet('''
-        QPushButton{background-color:rgb(68, 114, 196);
+        QPushButton{background-color:rgba(255,178,0,50%);
             color: white;   
-            border-radius: 5px;}
+            border-radius: 10px;  
+            border: 2px groove gray; 
+            border-style: outset;}
 		QPushButton:hover{background-color:white; 
             color: black;}
-		QPushButton:pressed{background-color:rgb(85, 170, 255);}
+		QPushButton:pressed{background-color:rgb(85, 170, 255); 
+            border-style: inset; }
         QWidget#Dialog{
             background:gray;
             border-top:1px solid white;
@@ -179,16 +173,15 @@ class UISettings(QDialog):
 
         self.serialThread.signal.connect(self.StatusChange)
  
-        self.threadPreview = None
+        self.threadPreview=None
         #self.imageResults=[0]*3
-        self.profileimages = ["", "", ""]
+        self.profileimages=["","",""]
         self.imageresults = []
-        self.yanthread = None
-        self._profilepath = ""  #with profile name
-        self.profilename = ""
-        self.isProfilestatus = False
+        self.yanthread=None
+        self._profilepath=""  #with profile name
+        self.profilename=""
 
-        self.imeidb = None
+        self.imeidb=None
         self.loadImeidb()
         self.serialThread.start()
 
@@ -211,12 +204,12 @@ class UISettings(QDialog):
                     cmc_maker = item['cmc_maker'] if 'cmc_maker' in item else ''
                     cmc_model = item['cmc_model'] if 'cmc_model' in item else ''
                     return (maker, model, cmc_maker, cmc_model)
-        return ('', '', '', '')
+        return ('','','','')
 
     def _getProfileName(self):
         self.profilename = ''
-        if self.leModel.text() !="" and self.lblStationID.text() != '':
-            self.profilename = self.leModel.text() +'_'+self.lblStationID.text()
+        if self.leModel.text()!="" and self.leStationID.text()!='':
+            self.profilename = self.leModel.text() +'_'+self.leStationID.text()
             self.config["phonemodel"] = self.leModel.text()
             self._saveConfigFile()
             return True
@@ -232,16 +225,17 @@ class UISettings(QDialog):
         self._getProfileName()        
 
     def StatusChange(self, value):
-        if not self.isAutoDetect:
+        if self.checkBox.isChecked():
             return
         self.takelock.acquire()
         print("value is :"+str(value))
         if (value == 2):
             self.OnPreview()
         elif(value == 1):
-            self.previewEvent.set() 
-            #start process
-            self.on_startclick()
+            if self.isAutoDetect:
+                self.previewEvent.set() 
+                #start process
+                self.on_startclick()
         self.takelock.release()
 
     #@staticmethod
@@ -294,15 +288,13 @@ class UISettings(QDialog):
         self.imageHeight = self.config['ch'] if 'ch' in self.config else 2464
         myconstdef.screwWidth = self.config['screww'] if 'screww' in self.config else 40
         myconstdef.screwHeight = self.config['screwh']  if 'screwh' in self.config else 40
-        self.isPreview = self.config['preview'] if 'preview' in self.config else True
+        self.isPreview= self.config['preview'] if 'preview' in self.config else True
         self.isAutoDetect = self.config["autostart"] if 'autostart' in self.config else True
-        self.cbAutoStart.setChecked(not self.isAutoDetect)
         spath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"profiles")
         self.sProfilePath = self.config["profilepath"] if 'profilepath' in self.config else spath
-        self.lblStationID.setText(self.config["stationid"] if 'stationid' in self.config else '1')
+        self.leStationID.setText(self.config["stationid"] if 'stationid' in self.config else '1')
         self.leModel.setText(self.config["phonemodel"] if 'phonemodel' in self.config else '')
-        self.serialThread.setThrehold(self.config["threhold"] 
-                                      if 'threhold' in self.config else 20000)
+        self.serialThread.setThrehold(self.config["threhold"] if 'threhold' in self.config else 20000)
 
 
     def createprofiledirstruct(self, profiename):
@@ -370,7 +362,7 @@ class UISettings(QDialog):
         stream = io.BytesIO()
         with picamera.PiCamera() as camera:
             camera.ISO = 50
-            camera.resolution = (640,480)
+            camera.resolution=(640,480)
             for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
                 if self.stop_prv.is_set():
                     self.stop_prv.clear()
@@ -404,7 +396,7 @@ class UISettings(QDialog):
         color: black
         ''')
         
-        self.imageTop.setImageScale()
+        self.imageTop.setImageScale() 
         self.stop_prv.clear()
         #logging.info(self.clientleft.startpause(False))
         self.logger.info(self.clienttop.startpause(False))
@@ -434,16 +426,12 @@ class UISettings(QDialog):
     @pyqtSlot()
     def btnstate(self):
         if self.sender().isChecked():
-            self.pbStart.setEnabled(False)
-            self.pbFinish.setEnabled(False)
-            self.isAutoDetect = True
-            self.config["autostart"] = True
+            self.imageTop.isProfile = True
+            self.imageLeft.isProfile = True
+            self.imageRight.isProfile = True
+            #self.leProfile.show()
+            #self.comboBox.hide()
         else:
-            self.pbStart.setEnabled(True)
-            self.pbFinish.setEnabled(True)
-            self.isAutoDetect = False
-            self.config["autostart"] = False
-            '''
             QApplication.setOverrideCursor(Qt.WaitCursor)
             try:
                 self.imageTop.isProfile = False
@@ -465,35 +453,11 @@ class UISettings(QDialog):
                 self.logger.exception(str(e))
             finally:
                 QApplication.restoreOverrideCursor() 
-            '''
-
-    @pyqtSlot()
-    def On_ExitSettingMode(self):
-        self.tabSetting.setCurrentIndex(0)
-
-    @pyqtSlot()
-    def On_settingChange(self):
-        sender = self.sender()
-        clickevent = sender.text()
-        if clickevent == u'Setting':
-            self.tabAllSetting.setCurrentIndex(0)
-        elif clickevent == u'Profile':
-            self.tabAllSetting.setCurrentIndex(1)
-        else:
-            self.tabAllSetting.setCurrentIndex(2)
 
 
     @pyqtSlot()
     def on_CameraChange(self):
-        sender = self.sender()
-        clickevent = sender.text()
-        if clickevent == u'TOP':
-            self.tabImages.setCurrentIndex(0)
-        elif clickevent == u'LEFT':
-            self.tabImages.setCurrentIndex(1)
-        else:
-            self.tabImages.setCurrentIndex(2)
-
+        return
 
 
     @pyqtSlot()
@@ -766,11 +730,11 @@ class UISettings(QDialog):
             time.sleep(0.1)  
 
         self._profilepath = os.path.join(self.config["profilepath"], self.profilename)
-        if not self.isProfilestatus and not os.path.exists(self._profilepath):
+        if not self.checkBox.isChecked() and not os.path.exists(self._profilepath):
             QMessageBox.question(self, 'Error', "Oh no! Create profile please.", QMessageBox.Cancel, QMessageBox.Cancel)
             return  
 
-        if self.isProfilestatus and os.path.exists(self._profilepath):
+        if self.checkBox.isChecked() and os.path.exists(self._profilepath):
             buttonReply = QMessageBox.question(self, 'Info', "Profile Exists. Do you want to the profile?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
             if buttonReply == QMessageBox.Cancel:
                 return  
@@ -781,7 +745,7 @@ class UISettings(QDialog):
                 pass
 
 
-        if self.isProfilestatus:
+        if self.checkBox.isChecked():
             mode = 0o777
             os.makedirs(pathleft, mode, True) 
             os.makedirs(pathtop, mode, True) 
@@ -891,17 +855,16 @@ class UISettings(QDialog):
 
     def ChangeTab(self):
         time.sleep(0.1)
-        window.tabImages.setCurrentIndex(0)
+        window.tabWidget.setCurrentIndex(0)
         time.sleep(0.1)
-        window.tabImages.setCurrentIndex(1)
+        window.tabWidget.setCurrentIndex(1)
         time.sleep(0.1)
-        window.tabImages.setCurrentIndex(2)
+        window.tabWidget.setCurrentIndex(2)
         time.sleep(0.1)
         self.logger.info(str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
         self.lblStatus.setFixedSize(self.lblStatus.width(),self.lblStatus.width())
         self.logger.info("Status Size:"+str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
-        window.tabImages.setCurrentIndex(0)
-        self.serialThread.start()
+        window.tabWidget.setCurrentIndex(0)
         self.imageTop.setImageScale() 
         self.imageLeft.setImageScale() 
         self.imageRight.setImageScale() 
