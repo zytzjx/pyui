@@ -183,6 +183,8 @@ class UISettings(QDialog):
 
         self.imeidb=None
         self.loadImeidb()
+        self.serialThread.start()
+
 
     def loadImeidb(self):
         if os.path.isfile('imei2model.json'):
@@ -643,6 +645,7 @@ class UISettings(QDialog):
 
     def DrawResultTop(self):
         #self.imageTop.DrawImageResults(self.imageresults, None )
+        self.imageTop.clear()
         self.imageTop.imagedresult = 0
         data = json.loads(self.clienttop.ResultTest(ImageLabel.CAMERA.TOP.value))
         if len(data)>0:
@@ -650,6 +653,7 @@ class UISettings(QDialog):
             status1 = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[ImageLabel.CAMERA.TOP.value]))
 
     def DrawResultLeft(self):
+        self.imageLeft.clear()
         self.imageLeft.imagedresult = 0
         self.imageLeft.DrawImageResults(self.imageresults, None )
         #data = json.loads(self.clientleft.ResultTest(1))
@@ -658,6 +662,7 @@ class UISettings(QDialog):
         #    status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
 
     def DrawResultRight(self):
+        self.imageRight.clear()
         self.imageRight.imagedresult = 0
         data = json.loads(self.clientright.ResultTest(ImageLabel.CAMERA.RIGHT.value))
         if len(data)>0:
@@ -860,7 +865,6 @@ class UISettings(QDialog):
         self.lblStatus.setFixedSize(self.lblStatus.width(),self.lblStatus.width())
         self.logger.info("Status Size:"+str(self.lblStatus.width())+"X"+str(self.lblStatus.height()))
         window.tabWidget.setCurrentIndex(0)
-        self.serialThread.start()
         self.imageTop.setImageScale() 
         self.imageLeft.setImageScale() 
         self.imageRight.setImageScale() 

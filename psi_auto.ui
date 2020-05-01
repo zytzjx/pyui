@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>480</height>
+    <width>1024</width>
+    <height>768</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -47,9 +47,9 @@
         <widget class="QPushButton" name="pbSetting">
          <property name="font">
           <font>
-           <pointsize>9</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
+           <pointsize>12</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="text">
@@ -189,29 +189,38 @@
               <item>
                <widget class="QLabel" name="label">
                 <property name="text">
-                 <string>UserName:</string>
+                 <string>Station ID:</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="MatchBoxLineEdit" name="leUserName">
+               <widget class="MatchBoxLineEdit" name="leStationID">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777214</height>
+                 </size>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
                </widget>
               </item>
               <item>
                <widget class="QLabel" name="label_2">
                 <property name="text">
-                 <string>Password:</string>
+                 <string>Model:</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="MatchBoxLineEdit" name="lePsw"/>
+               <widget class="MatchBoxLineEdit" name="leModel"/>
               </item>
               <item>
                <widget class="QCheckBox" name="checkBox">
@@ -222,6 +231,9 @@
               </item>
               <item>
                <widget class="QLabel" name="label_3">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
                 <property name="text">
                  <string>Profile:</string>
                 </property>
@@ -244,8 +256,8 @@
                 </property>
                 <property name="minimumSize">
                  <size>
-                  <width>100</width>
-                  <height>100</height>
+                  <width>155</width>
+                  <height>155</height>
                  </size>
                 </property>
                 <property name="font">
@@ -311,14 +323,14 @@
                </size>
               </property>
               <property name="text">
-               <string>Stop</string>
+               <string>Image UP</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QPushButton" name="pbImageChangeDown">
               <property name="text">
-               <string>Preview</string>
+               <string>Image Down</string>
               </property>
              </widget>
             </item>
@@ -340,7 +352,7 @@
           <enum>QTabWidget::West</enum>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tbMain">
           <attribute name="title">
