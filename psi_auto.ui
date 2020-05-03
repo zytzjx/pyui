@@ -764,7 +764,7 @@ background-color: rgb(195, 195, 195);</string>
              <enum>QTabWidget::Rounded</enum>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <property name="elideMode">
              <enum>Qt::ElideNone</enum>
@@ -1001,7 +1001,7 @@ color: rgb(0, 0, 0);</string>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QLineEdit" name="lineEdit_3">
+                    <widget class="QLineEdit" name="leStationID">
                      <property name="minimumSize">
                       <size>
                        <width>0</width>
@@ -1213,7 +1213,7 @@ color: rgb(0, 0, 0);</string>
                        </widget>
                       </item>
                       <item>
-                       <widget class="QSpinBox" name="spinBox">
+                       <widget class="QSpinBox" name="sbRepeatTime">
                         <property name="minimumSize">
                          <size>
                           <width>0</width>
@@ -1268,7 +1268,7 @@ color: rgb(0, 0, 0);</string>
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="pbDryRunStart_2">
+                       <widget class="QPushButton" name="pbDryRunStart">
                         <property name="minimumSize">
                          <size>
                           <width>86</width>
@@ -1314,7 +1314,7 @@ color: rgb(0, 0, 0);</string>
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="pbTop_4">
+                       <widget class="QPushButton" name="pbDryRunStop">
                         <property name="minimumSize">
                          <size>
                           <width>86</width>
