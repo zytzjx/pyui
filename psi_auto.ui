@@ -441,7 +441,7 @@
           <enum>QTabWidget::South</enum>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tbMain">
           <attribute name="title">
@@ -461,64 +461,7 @@
             <number>0</number>
            </property>
            <item row="0" column="0">
-            <widget class="QScrollArea" name="saMain">
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <property name="widgetResizable">
-              <bool>true</bool>
-             </property>
-             <widget class="QWidget" name="sawcMain">
-              <property name="geometry">
-               <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>576</width>
-                <height>695</height>
-               </rect>
-              </property>
-              <widget class="ImageLabel" name="imageTop">
-               <property name="geometry">
-                <rect>
-                 <x>0</x>
-                 <y>0</y>
-                 <width>551</width>
-                 <height>721</height>
-                </rect>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="frameShape">
-                <enum>QFrame::NoFrame</enum>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-               <property name="lineWidth">
-                <number>0</number>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </widget>
-            </widget>
+            <widget class="PhotoViewer" name="imageTop"/>
            </item>
           </layout>
          </widget>
@@ -540,67 +483,7 @@
             <number>0</number>
            </property>
            <item row="0" column="0">
-            <widget class="QScrollArea" name="saLeft">
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <property name="lineWidth">
-              <number>0</number>
-             </property>
-             <property name="widgetResizable">
-              <bool>true</bool>
-             </property>
-             <widget class="QWidget" name="sawcLeft">
-              <property name="geometry">
-               <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>576</width>
-                <height>695</height>
-               </rect>
-              </property>
-              <widget class="ImageLabel" name="imageLeft">
-               <property name="geometry">
-                <rect>
-                 <x>0</x>
-                 <y>0</y>
-                 <width>561</width>
-                 <height>731</height>
-                </rect>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="frameShape">
-                <enum>QFrame::NoFrame</enum>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-               <property name="lineWidth">
-                <number>0</number>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </widget>
-            </widget>
+            <widget class="PhotoViewer" name="imageLeft"/>
            </item>
           </layout>
          </widget>
@@ -622,67 +505,7 @@
             <number>0</number>
            </property>
            <item row="0" column="0">
-            <widget class="QScrollArea" name="saRight">
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <property name="lineWidth">
-              <number>0</number>
-             </property>
-             <property name="widgetResizable">
-              <bool>true</bool>
-             </property>
-             <widget class="QWidget" name="sawcRight">
-              <property name="geometry">
-               <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>576</width>
-                <height>695</height>
-               </rect>
-              </property>
-              <widget class="ImageLabel" name="imageRight">
-               <property name="geometry">
-                <rect>
-                 <x>0</x>
-                 <y>0</y>
-                 <width>566</width>
-                 <height>730</height>
-                </rect>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="frameShape">
-                <enum>QFrame::NoFrame</enum>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-               <property name="lineWidth">
-                <number>0</number>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </widget>
-            </widget>
+            <widget class="PhotoViewer" name="imageRight"/>
            </item>
           </layout>
          </widget>
@@ -810,7 +633,7 @@ background-color: rgb(195, 195, 195);</string>
              <attribute name="title">
               <string>Tab 2</string>
              </attribute>
-             <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0,30">
+             <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0,0">
               <property name="spacing">
                <number>0</number>
               </property>
@@ -826,6 +649,12 @@ background-color: rgb(195, 195, 195);</string>
                     <width>50</width>
                     <height>25</height>
                    </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>Arial</family>
+                    <pointsize>14</pointsize>
+                   </font>
                   </property>
                   <property name="styleSheet">
                    <string notr="true">background-color:  rgb(255, 255, 255);
@@ -850,6 +679,12 @@ color: rgb(0, 0, 0);</string>
                     <height>25</height>
                    </size>
                   </property>
+                  <property name="font">
+                   <font>
+                    <family>Arial</family>
+                    <pointsize>14</pointsize>
+                   </font>
+                  </property>
                   <property name="styleSheet">
                    <string notr="true">background-color:  rgb(255, 255, 255);
 color: rgb(0, 0, 0);</string>
@@ -872,6 +707,12 @@ color: rgb(0, 0, 0);</string>
                     <width>50</width>
                     <height>25</height>
                    </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>Arial</family>
+                    <pointsize>14</pointsize>
+                   </font>
                   </property>
                   <property name="styleSheet">
                    <string notr="true">background-color:  rgb(255, 255, 255);
@@ -1378,6 +1219,196 @@ color: rgb(0, 0, 0);</string>
                   </item>
                  </layout>
                 </widget>
+                <widget class="QWidget" name="tab">
+                 <attribute name="title">
+                  <string>Page</string>
+                 </attribute>
+                 <layout class="QGridLayout" name="gridLayout_8">
+                  <item row="0" column="0">
+                   <layout class="QVBoxLayout" name="verticalLayout_8">
+                    <item>
+                     <layout class="QGridLayout" name="gridLayout_11">
+                      <item row="1" column="1">
+                       <widget class="QLineEdit" name="leProfileModel">
+                        <property name="font">
+                         <font>
+                          <family>Arial</family>
+                          <pointsize>18</pointsize>
+                         </font>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">background-color: rgb(189, 189, 189);</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="0">
+                       <widget class="QLabel" name="label_5">
+                        <property name="font">
+                         <font>
+                          <family>Arial</family>
+                          <pointsize>18</pointsize>
+                         </font>
+                        </property>
+                        <property name="text">
+                         <string>StationID:</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0">
+                       <widget class="QLabel" name="label_10">
+                        <property name="font">
+                         <font>
+                          <family>Arial</family>
+                          <pointsize>18</pointsize>
+                         </font>
+                        </property>
+                        <property name="text">
+                         <string>Model:</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="1">
+                       <widget class="QLineEdit" name="leProfileStationID">
+                        <property name="font">
+                         <font>
+                          <family>Arial</family>
+                          <pointsize>18</pointsize>
+                         </font>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">background-color: rgb(189, 189, 189);</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <widget class="QLabel" name="label_11">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>160</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string/>
+                      </property>
+                      <property name="pixmap">
+                       <pixmap resource="resource.qrc">:/icons/info.png</pixmap>
+                      </property>
+                      <property name="scaledContents">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="verticalSpacer_10">
+                      <property name="orientation">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>20</width>
+                        <height>40</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_6">
+                      <item>
+                       <widget class="QPushButton" name="pbAddProfile">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>41</height>
+                         </size>
+                        </property>
+                        <property name="font">
+                         <font>
+                          <family>Arial</family>
+                          <pointsize>18</pointsize>
+                         </font>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">background-color:rgb(68, 114, 196);
+            color: white;   
+            border-radius: 5px;}
+		QPushButton:hover{background-color:rgb(195,195,195); 
+            color: blue;}
+		QPushButton:pressed{background-color:rgb(85, 170, 255);</string>
+                        </property>
+                        <property name="text">
+                         <string>Add</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="pbProfileSave">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>41</height>
+                         </size>
+                        </property>
+                        <property name="font">
+                         <font>
+                          <family>Arial</family>
+                          <pointsize>18</pointsize>
+                         </font>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">background-color:rgb(68, 114, 196);
+            color: white;   
+            border-radius: 5px;}
+		QPushButton:hover{background-color:rgb(195,195,195); 
+            color: blue;}
+		QPushButton:pressed{background-color:rgb(85, 170, 255);</string>
+                        </property>
+                        <property name="text">
+                         <string>Save</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="pbDoneProfile">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>41</height>
+                         </size>
+                        </property>
+                        <property name="font">
+                         <font>
+                          <family>Arial</family>
+                          <pointsize>18</pointsize>
+                         </font>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">background-color:rgb(68, 114, 196);
+            color: white;   
+            border-radius: 5px;}
+		QPushButton:hover{background-color:rgb(195,195,195); 
+            color: blue;}
+		QPushButton:pressed{background-color:rgb(85, 170, 255);</string>
+                        </property>
+                        <property name="text">
+                         <string>Done</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </widget>
                </widget>
               </item>
              </layout>
@@ -1566,9 +1597,9 @@ color: rgb(0, 0, 0);</string>
    <header>MatchBoxLineEdit</header>
   </customwidget>
   <customwidget>
-   <class>ImageLabel</class>
-   <extends>QLabel</extends>
-   <header>ImageLabel</header>
+   <class>PhotoViewer</class>
+   <extends>QGraphicsView</extends>
+   <header>PhotoViewer</header>
   </customwidget>
  </customwidgets>
  <resources>
