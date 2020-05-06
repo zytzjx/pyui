@@ -9,7 +9,7 @@ from PIL.ImageQt import ImageQt
 from PyQt5.QtCore import pyqtSlot,Qt, QThread, pyqtSignal
 from PyQt5 import QtWidgets,  QtGui
 from PyQt5.QtWidgets import (QApplication, QDialog, QStyleFactory, QLineEdit, QHBoxLayout, QMessageBox)
-from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent
+from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter,QPen,QCursor,QMouseEvent,QKeySequence
 from PyQt5.uic import loadUi
 import logging
 import settings
@@ -198,6 +198,17 @@ class UISettings(QDialog):
         self.leProfileModel.returnPressed.connect(self.On_ProfileTakePic)
         #self.listWidget.itemDoubleClicked.connect(self.On_ListWidgetDoubleClick)
 
+        ######Add ShortCut Begin######### 
+        self.scAdd = QtWidgets.QShortcut(QKeySequence("Ctrl+A"), self)
+        self.scAdd.activated.connect(self.On_AddProfile)
+        
+        self.scSave = QtWidgets.QShortcut(QKeySequence("Ctrl+S"), self)
+        self.scSave.activated.connect(self.On_SaveSetting)
+
+        self.scNew = QtWidgets.QShortcut(QKeySequence("Ctrl+N"), self)
+        self.scNew.activated.connect(self.On_ProfileNew)
+
+        ######Add ShortCut End########### 
         self.threadPreview = None
         self.threadDryrun = None
         #self.imageResults=[0]*3
@@ -498,6 +509,7 @@ class UISettings(QDialog):
             return 
         self.tabSetting.setCurrentIndex(1)
         self.leStationID.setText(self.config["stationid"] if 'stationid' in self.config else '1')
+        self.isProfilestatus = True
         #self.pbStart.setEnabled(False)
         #self.pbFinish.setEnabled(False)
 
@@ -667,15 +679,18 @@ class UISettings(QDialog):
         os.system(cmd)
 
     def capture(self, cam, IsDetect=True):
-        cmd = "raspistill -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/rawimage_%d.jpg" % cam
-        if cam ==0:
-            cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/rawimage_%d.jpg" % cam
+        cmd = "raspistill -w 3280 -h 2464 -rot 270 -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
+        #if cam ==0:
+        #    cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/rawimage_%d.jpg" % cam
         os.system(cmd)
-        im = Image.open("/tmp/ramdisk/rawimage_%d.jpg" % cam)
+        #im = Image.open("/tmp/ramdisk/rawimage_%d.jpg" % cam)
         #rotate image by 90 degrees
-        angle = 270
-        out = im.rotate(angle, expand=True)
-        out.save("/tmp/ramdisk/phoneimage_%d.jpg" % cam)
+        #print("start: ", datetime.now())
+        #angle = 270
+        #out = im.rotate(angle, expand=True)
+        #print("mid: ", datetime.now())
+        #out.save("/tmp/ramdisk/phoneimage_%d.jpg" % cam)
+        #print("end: ", datetime.now())
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
         else:
@@ -869,6 +884,9 @@ class UISettings(QDialog):
 
     @pyqtSlot()
     def on_startclick(self):
+        if self.isProfilestatus:
+            return
+
         self._getProfileName()
         if self.profilename=="":
             QMessageBox.question(self, 'Error', "Oh no! Profile name is empty.", QMessageBox.Cancel, QMessageBox.Cancel)
@@ -1061,6 +1079,8 @@ class UISettings(QDialog):
 
 
     def On_ProfileNew(self):
+        if self.tabAllSetting.currentIndex() != 1:
+            return
         self.tabAllSetting.setCurrentIndex(3)
         self.leProfileModel.setText('')
         self.leProfileStationID.setText('')
@@ -1150,6 +1170,16 @@ class UISettings(QDialog):
             QApplication.restoreOverrideCursor() 
 
 
+
+def lockFile(lockfile):
+    import fcntl
+    fp = open(lockfile, 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        return False
+    return True
+
 def CreateLog():
     import logging
     from logging.handlers import RotatingFileHandler
@@ -1167,6 +1197,8 @@ def CreateLog():
     return logger
 
 if __name__ == "__main__":
+    if not lockFile(".lock.pid"):
+        sys.exit(0)
     #%(threadName)s       %(thread)d
     #logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s[%(thread)d] - %(levelname)s - %(message)s')
     logger = CreateLog()

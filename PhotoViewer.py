@@ -114,8 +114,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                              viewrect.height() / scenerect.height())
                 #print(str(factor)+"======")
                 self.scale(factor, factor)
-                scenerect = self.transform().mapRect(rect)
+                #scenerect = self.transform().mapRect(rect)
                 #print(scenerect)
+                self.curfactor = factor
 
             self._zoom = 0
 
@@ -199,7 +200,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             abc = self.mapToScene(sc).toPoint() 
             abc = abc - self.rightClickPoint[0]
             self.screwReal = abc.x() * 2
-            self.screwDraw = int (self.screwReal / self.curfactor)
+            self.screwDraw = int (PhotoViewer.MOUSEWIDTH /2 / self.curfactor)
+            print("rightinfoclick:"+str(self.screwReal)+"=>"+str(self.screwDraw)+'==>'+str(self.curfactor))
             self.scene().update()
         else:
             print("right no click:"+str(pt.x())+"=>"+str(pt.y()))
@@ -249,7 +251,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         if self._empty or self.rightClickPoint[0].isNull():
             return
         pen = QPen(QColor(21, 51, 255))
-        pen.setWidth(6)
+        pen.setWidth(3)
         painter.setPen(pen)
 
         for x in self.profilepoints:
@@ -372,10 +374,14 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         
 
     def AddProfilePoint(self):
+        if self.screwReal == 0 or self.screwDraw == 0:
+            return
         pt = ProfilePoint(0,0,0,0)
         pt.setCentrSize(self.rightClickPoint[0], self.screwReal, self.screwReal)
         pt.screwDraw = self.screwDraw
         self.profilepoints.append(pt)
+        self.screwReal = 0
+        self.screwDraw = 0
     
     def _savescrew(self, ptt, _indexscrew):
         if self._imagepixmap is None or  pixmap.isNull():

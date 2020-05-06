@@ -339,15 +339,15 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         return xmlrpc.client.Binary(handle.read())
     
     def capture(self, cam, IsDetect=True):
-        cmd = "raspistill -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/rawimage_%d.jpg" % cam
+        cmd = "raspistill -w 3280 -h 2464 -rot 90 -vf -hf -ISO 50 -n -t 50 -o /tmp/ramdisk/phoneimage_%d.jpg" % cam
         #if cam ==0:
         #    cmd = "raspistill -ISO 50 -n -t 50 -o /tmp/ramdisk/rawimage_%d.jpg" % cam
         os.system(cmd)
-        im = Image.open("/tmp/ramdisk/rawimage_%d.jpg" % cam)
+        #im = Image.open("/tmp/ramdisk/rawimage_%d.jpg" % cam)
         #rotate image by 90 degrees
-        angle = 90
-        out = im.rotate(angle, expand=True)
-        out.save("/tmp/ramdisk/phoneimage_%d.jpg" % cam)
+        #angle = 90
+        #out = im.rotate(angle, expand=True)
+        #out.save("/tmp/ramdisk/phoneimage_%d.jpg" % cam)
         if not IsDetect:
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % cam, os.path.join(self._profilepath, self._DirSub(cam), self.profilename+".jpg"))
         else:
