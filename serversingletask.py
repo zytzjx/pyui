@@ -313,7 +313,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             
             self._indexscrew = 0
             for rr in rects:
-                self._savescrewRect(rr)
+                self._savescrewRect(index, rr)
 
     def updateProfile(self, ppath):
         if not ppath or ppath=="":

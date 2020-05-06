@@ -506,6 +506,7 @@ class UISettings(QDialog):
     def On_SaveSetting(self):
         self.config['stationid'] = self.leStationID.text()
         self._saveConfigFile()
+        self.lblStationID.setText(self.leStationID.text())
 
     @pyqtSlot()
     def On_DryRun(self):
@@ -1091,9 +1092,18 @@ class UISettings(QDialog):
         self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  profilename+".jpg")
         self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  profilename+".jpg")
 
-        self.stop_prv.set() 
-        if self.stop_prv.is_set():
-            time.sleep(0.1)  
+        if self.threadPreview!=None and self.threadPreview.is_alive():
+            self.stop_prv.set() 
+            if self.stop_prv.is_set():
+                time.sleep(0.1)  
+        else:
+            for i in range(0,2):
+                while True:
+                    try:
+                        self.clienttop.startpause(True)
+                    except :
+                        continue
+                    break
 
         self._profilepath = os.path.join(self.sProfilePath, profilename)
 

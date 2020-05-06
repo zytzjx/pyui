@@ -415,6 +415,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         return len(self.profilepoints) > 0
 
     def SaveProfile(self):
+        if len(self.profilepoints) == 0:
+            return
         index = 0
         profiletxt = os.path.join(self.profilerootpath, self.profile.profilename, self.DirSub(self._camerapoisition),  self.profile.profilename+".txt")
         if os.path.exists(profiletxt):
