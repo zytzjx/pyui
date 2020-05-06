@@ -313,7 +313,8 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             
             self._indexscrew = 0
             for rr in rects:
-                self._savescrewRect(index, rr)
+                rect = QRect(QPoint(rr[0], rr[1]), QPoint(rr[2], rr[3]))
+                self._savescrewRect(index, rect)
 
     def updateProfile(self, ppath):
         if not ppath or ppath=="":
