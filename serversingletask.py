@@ -295,7 +295,8 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
         profilepath=os.path.join(profilepath, self._DirSub(index), filename)
         self._indexscrew+=1
         cropQPixmap.save(profilepath)
-        screwpoint = profiledata.screw(self.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
+        rect = QRect(QPoint(x,y), QPoint(x1,y1))
+        screwpoint = profiledata.screw(self.profilename, filename, rect.center(), QPoint(x,y), QPoint(x1,y1))
         #self.ProfilePoint.append(screwpoint)
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
         profiletxt = os.path.join(self._profilepath, self._DirSub(index),  self.profilename+".txt")

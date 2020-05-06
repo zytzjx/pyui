@@ -425,7 +425,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         rects = []
         if self._client:
             for x in self.profilepoints:
-                rects.append(x.lefttop.x(),x.lefttop().y(),x.rightbottom.x(),x.rightbottom.y())
+                rects.append([x.lefttop.x(), x.lefttop.y(), x.rightbottom.x(), x.rightbottom.y()])
             self._client.SaveProfile(self._camerapoisition.value, rects)
         else:
             for x in self.profilepoints:
