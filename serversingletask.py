@@ -94,7 +94,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             stream = io.BytesIO()
             with picamera.PiCamera() as camera:
                 camera.ISO = 50
-                camera.resolution=(640,480)
+                camera.resolution=(720,580)
                 #camera.resolution=(480,640)
                 camera.vflip = True
                 camera.hflip = True
