@@ -82,6 +82,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.curfactor = 0.0
         self.screwDraw = 0
         self.screwReal= 0
+        self._client = None
 
     def hasPhoto(self):
         return not self._empty
@@ -383,8 +384,17 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.screwReal = 0
         self.screwDraw = 0
     
+    def fileprechar(self, argument):
+        switcher = {
+            CAMERA.LEFT: "L",
+            CAMERA.TOP: "T",
+            CAMERA.RIGHT: "R",
+        }
+        return switcher.get(argument, "Invalid")
+
+
     def _savescrew(self, ptt, _indexscrew):
-        if self._imagepixmap is None or  pixmap.isNull():
+        if self._imagepixmap is None or self._imagepixmap.isNull():
             return
            
         x = ptt.lefttop.x()
@@ -397,8 +407,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         filename = self.fileprechar(self._camerapoisition)+str(_indexscrew)+".png" 
         profilepath=os.path.join(profilepath, self.DirSub(self._camerapoisition), filename)
         cropQPixmap.save(profilepath)
-        screwpoint = profiledata.screw(self.profile.profilename, filename, pt, QPoint(x,y), QPoint(x1,y1))
-        self.ProfilePoint.append(screwpoint)
+        #screwpoint = profiledata.screw(self.profile.profilename, filename, ptt.centrpoint, QPoint(x,y), QPoint(x1,y1))
+        #self.ProfilePoint.append(screwpoint)
         sinfo = profilepath+", "+str(x)+", "+str(x1)+", "+str(y)+", "+str(y1)
         profiletxt = os.path.join(self.profilerootpath, self.profile.profilename, self.DirSub(self._camerapoisition),  self.profile.profilename+".txt")
         self.append_new_line(profiletxt, sinfo)

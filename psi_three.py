@@ -1094,6 +1094,7 @@ class UISettings(QDialog):
             return             
         
         profilename = self.leProfileModel.text() + "_" + self.leProfileStationID.text()
+        self.profilename = profilename
         _profilepath = os.path.join(self.sProfilePath, profilename)
         if  os.path.exists(_profilepath):
             try:
@@ -1104,6 +1105,7 @@ class UISettings(QDialog):
                 self.logger.exception(str(e)) 
 
         self.isProfilestatus = True
+        
         pathleft = os.path.join(self.sProfilePath, profilename, "left")
         pathtop = os.path.join(self.sProfilePath, profilename, "top")
         pathright = os.path.join(self.sProfilePath, profilename, "right")
