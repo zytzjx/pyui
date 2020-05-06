@@ -99,7 +99,7 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
                 camera.vflip = True
                 camera.hflip = True
 
-                camera.rotation = 90
+                #camera.rotation = 90
                 #camera.start_preview()
                 #time.sleep(2)
                 for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):

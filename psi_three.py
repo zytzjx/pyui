@@ -418,6 +418,7 @@ class UISettings(QDialog):
             #data = self.clientleft.preview().data
             data = self.clienttop.preview().data
             image = Image.open(io.BytesIO(data))
+            image = image.rotate(90, expand=True)
             imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
             pixmap = QPixmap.fromImage(imageq)
             #self.imageTop.ShowPreImage(pixmap)
@@ -740,7 +741,7 @@ class UISettings(QDialog):
                 self.imageview.emit(QPixmap("/tmp/ramdisk/temp_%d.jpg" % index), index)
         else:
             #imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
-            if index==ImageLabel.CAMERA.LEFT.value:
+            if index==PhotoViewer.CAMERA.LEFT.value:
                 #imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index))
                 self.imageview.emit(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index), index)
             else:
@@ -884,9 +885,18 @@ class UISettings(QDialog):
         self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  self.profilename+".jpg")
         self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
 
-        self.stop_prv.set() 
-        if self.stop_prv.is_set():
-            time.sleep(0.1)  
+        if self.threadPreview!=None and self.threadPreview.is_alive():
+            self.stop_prv.set() 
+            if self.stop_prv.is_set():
+                time.sleep(0.1)  
+        else:
+            for i in range(0,2):
+                while True:
+                    try:
+                        self.clienttop.startpause(True)
+                    except :
+                        continue
+                    break
 
         self._profilepath = os.path.join(self.sProfilePath, self.profilename)
         if not self.isProfilestatus and not os.path.exists(self._profilepath):
@@ -922,54 +932,54 @@ class UISettings(QDialog):
             self.logger.info("Start end left")        
             pRight.join()
             self.logger.info("Start end right")        
-            if not self.isProfilestatus:
-                status, status1, status2 = 0, 0, 0
-                #self.takepic.wait()
-                #self.takepic.clear()
-                try:
-                    self.logger.info("Start Draw Info")
-                    
-                    threads=[]
-                    ttop = threading.Thread(target=self.DrawResultTop)
-                    ttop.start()
-                    threads.append(ttop)
-                    self.logger.info("Draw top finish")
-                    
-                    tleft = threading.Thread(target=self.DrawResultLeft)
-                    tleft.start()
-                    threads.append(tleft)
-                    self.logger.info("Draw left finish")
+            #if not self.isProfilestatus:
+            status, status1, status2 = 0, 0, 0
+            #self.takepic.wait()
+            #self.takepic.clear()
+            try:
+                self.logger.info("Start Draw Info")
+                
+                threads=[]
+                ttop = threading.Thread(target=self.DrawResultTop)
+                ttop.start()
+                threads.append(ttop)
+                self.logger.info("Draw top finish")
+                
+                tleft = threading.Thread(target=self.DrawResultLeft)
+                tleft.start()
+                threads.append(tleft)
+                self.logger.info("Draw left finish")
 
-                    tright = threading.Thread(target=self.DrawResultRight)
-                    tright.start()
-                    threads.append(tright)
-                    
-                    for t in threads:
-                        t.join()
-                    
-                    status = self.imageTop.imagedresult
-                    status1 = self.imageLeft.imagedresult
-                    status2 = self.imageRight.imagedresult
-                    self.logger.info("End Draw Info:%d:%d:%d"%(status, status1, status2))
-                except :
-                    status = 5
+                tright = threading.Thread(target=self.DrawResultRight)
+                tright.start()
+                threads.append(tright)
+                
+                for t in threads:
+                    t.join()
+                
+                status = self.imageTop.imagedresult
+                status1 = self.imageLeft.imagedresult
+                status2 = self.imageRight.imagedresult
+                self.logger.info("End Draw Info:%d:%d:%d"%(status, status1, status2))
+            except :
+                status = 5
 
-                status = max([status, status1, status2])
-                if status==0:
-                    self.lblStatus.setText("")
-                    self.lblStatus.setStyleSheet('''
-                    border-image: url(:/icons/yes.png); 
-                    ''')
-                elif status==1:
-                    self.lblStatus.setText("")
-                    self.lblStatus.setStyleSheet('''
-                    border-image: url(:/icons/warning.png);
-                    ''')
-                else:
-                    self.lblStatus.setText("")
-                    self.lblStatus.setStyleSheet('''
-                    border-image: url(:/icons/no.png); 
-                    ''')
+            status = max([status, status1, status2])
+            if status==0:
+                self.lblStatus.setText("")
+                self.lblStatus.setStyleSheet('''
+                border-image: url(:/icons/yes.png); 
+                ''')
+            elif status==1:
+                self.lblStatus.setText("")
+                self.lblStatus.setStyleSheet('''
+                border-image: url(:/icons/warning.png);
+                ''')
+            else:
+                self.lblStatus.setText("")
+                self.lblStatus.setStyleSheet('''
+                border-image: url(:/icons/no.png); 
+                ''')
 
             self.logger.info("task finished")
 
