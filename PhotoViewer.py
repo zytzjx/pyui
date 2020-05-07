@@ -44,6 +44,7 @@ class ProfilePoint:
 class PhotoViewer(QtWidgets.QGraphicsView):
     photoClicked = QtCore.pyqtSignal(QtCore.QPoint)
     photoRightClicked = QtCore.pyqtSignal(QtCore.QPoint, QtCore.QPoint)
+    showThreadImageUpdate = QtCore.pyqtSignal(QPixmap)
     MOUSEWIDTH = 100
     def __init__(self, parent):
         super(PhotoViewer, self).__init__(parent)
@@ -63,6 +64,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
         self.photoRightClicked.connect(self.MouseRightClick)
+        self.showThreadImageUpdate.connect(self.UpdateImage)
 
         self._camerapoisition=CAMERA.TOP
         self.CURSOR_NEW = QCursor(QPixmap(':/icons/cursor.png').scaled(PhotoViewer.MOUSEWIDTH, PhotoViewer.MOUSEWIDTH, Qt.KeepAspectRatio, Qt.SmoothTransformation))
@@ -166,7 +168,6 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self._zoom = 0
             rect = QtCore.QRectF(self._photo.pixmap().rect())    
             scenerect = self.transform().mapRect(rect)
-            #print(scenerect)
             self.curfactor = scenerect.width() / rect.width()
            
 
@@ -208,6 +209,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             print("right no click:"+str(pt.x())+"=>"+str(pt.y()))
             self.rightClickPoint = (QPoint(), QPoint())
 
+    def UpdateImage(self, bmp):
+        self.ShowPreImage(bmp)
 
     def enterEvent(self, event):
         if not self.isPreviewMode:
@@ -345,10 +348,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             painterInstance.setPen(penRectangle)
             painterInstance.drawRect(QRect(QPoint(location[0], location[2]),QPoint(location[1], location[3])))
 
-        self.setPhoto(self._imagepixmap)
+        #self.setPhoto(self._imagepixmap)
+        self.showThreadImageUpdate.emit(self._imagepixmap)
         painterInstance.end()
         self.imagedresult = ret
-        logging.info("DrawImageResults -- ")
+        self.logger.info("DrawImageResults -- ")
         return ret
 
     def LoadProfilePoints(self, fname):

@@ -211,6 +211,9 @@ class UISettings(QDialog):
         self.scNew = QtWidgets.QShortcut(QKeySequence("Ctrl+N"), self)
         self.scNew.activated.connect(self.On_ProfileNew)
 
+        self.scResult = QtWidgets.QShortcut(QKeySequence("Ctrl+R"), self)
+        self.scResult.activated.connect(self.On_ShowDryRunResult)
+
         ######Add ShortCut End########### 
         self.threadPreview = None
         self.threadDryrun = None
@@ -225,6 +228,7 @@ class UISettings(QDialog):
         self.imeidb = None
         self.loadImeidb()
         self.serialThread.start()
+        self.dryrunResult = []
 
     def PreviewMode(self, v):
         self.imageTop.toggleReviewMode(v)
@@ -793,6 +797,7 @@ class UISettings(QDialog):
                 #pixmap = QPixmap.fromImage(imageq)
                 #imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/temp_%d.jpg" % index))#pixmap
                 self.imageview.emit(QPixmap("/tmp/ramdisk/temp_%d.jpg" % index), index)
+                #self.imageview.emit(pixmap)
         else:
             #imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
             if index==PhotoViewer.CAMERA.LEFT.value:
@@ -885,7 +890,6 @@ class UISettings(QDialog):
         self.imageRight.imagedresult = 0
         data = json.loads(self.clientright.ResultTest(PhotoViewer.CAMERA.RIGHT.value))
         if len(data)>0:
-            #status2 = self.testScrewResult(data)
             status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[PhotoViewer.CAMERA.RIGHT.value]))
 
     def _loadProfile(self):
@@ -931,6 +935,9 @@ class UISettings(QDialog):
             self.imageRight.clear()
 
 
+    @pyqtSlot()
+    def On_ShowDryRunResult(self):
+        pass
 
     @pyqtSlot()
     def on_startclick(self):
@@ -1109,7 +1116,9 @@ class UISettings(QDialog):
         self.imageTop.SaveProfile()
         self.imageLeft.SaveProfile()
         self.imageRight.SaveProfile()
-        self.listWidget.addItem(self.profilename)
+        items = self.listWidget.findItems(self.profilename, Qt.MatchExactly)
+        if len(items) == 0:
+            self.listWidget.addItem(self.profilename)
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
