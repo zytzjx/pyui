@@ -10,6 +10,15 @@ export DISPLAY=:0
 #X -nocursor -s 0 -dpms &
 /home/pi/Desktop/pyUI/start.sh &
 
+sudo nano ~/.config/lxsession/LXDE-pi/autostart
+@lxpanel --profile LXDE
+@pcmanfm --desktop --profile LXDE
+@xscreensaver -no-splash
+@/home/pi/Desktop/pyUI/start.sh
+
+
+
+
 sudo apt install python3-opencv
 
 

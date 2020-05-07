@@ -280,12 +280,12 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self._imagepixmap = QPixmap(imagename)
         painterInstance = QPainter(self._imagepixmap)
         penRectangle = QPen(Qt.red)
-        penRectangle.setWidth(6)
+        penRectangle.setWidth(3)
         painterInstance.setPen(penRectangle)
 
         for pt in self.profilepoints:
             # draw rectangle on painter
-            painterInstance.drawEllipse(pt.centrpoint, pt.rect.width(), pt.rect.height())
+            painterInstance.drawEllipse(pt.centrpoint, pt.rect.width() / 2, pt.rect.height() / 2)
 
         self.setPhoto(self._imagepixmap)
         painterInstance.end()
