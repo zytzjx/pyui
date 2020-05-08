@@ -32,6 +32,7 @@ import numpy as np
 import testScrew
 import myconstdef
 import resource
+import dlgResult
 
 files = []
 
@@ -118,6 +119,7 @@ class UISettings(QDialog):
     imageview = pyqtSignal(QPixmap, int)
     ViewerPreViewMode = pyqtSignal(bool)
     ClearImageShow = pyqtSignal(int)
+    ShowRepeatTime = pyqtSignal(int)
     def __init__(self, parent=None):
         super(UISettings, self).__init__()
         self.logger = logging.getLogger('PSILOG')
@@ -160,6 +162,7 @@ class UISettings(QDialog):
         self.imageview.connect(self.someFunction)
         self.ViewerPreViewMode.connect(self.PreviewMode)
         self.ClearImageShow.connect(self._ClearImageShow)
+        self.ShowRepeatTime.connect(self._ShowRepeatTime)
         #self.pbSetting.clicked.connect(self.on_settingclick)
         #self.pbKeyBoard.clicked.connect(self.on_KeyBoardclick)
         self.cbAutoStart.stateChanged.connect(self.btnstate)
@@ -693,10 +696,12 @@ class UISettings(QDialog):
         self.stop_DryRun.clear()
         irepeat = self.sbRepeatTime.value()
         self.isProfilestatus = False
+        self.dryrunResult = []
         while not self.stop_DryRun.is_set() and irepeat>0:
             self.on_startclick()
             irepeat -= 1
-            self.sbRepeatTime.setValue(irepeat)
+            #self.sbRepeatTime.setValue(irepeat)
+            self.ShowRepeatTime.emit(irepeat)
             time.sleep(2)
         self.isProfilestatus = True
 
@@ -934,10 +939,13 @@ class UISettings(QDialog):
         if index & 0x4 == 0x4:
             self.imageRight.clear()
 
+    def _ShowRepeatTime(self, repeat):
+        self.sbRepeatTime.setValue(repeat)
 
     @pyqtSlot()
     def On_ShowDryRunResult(self):
-        pass
+        dlg = dlgResult.ResultDialog(self.dryrunResult, self)
+        dlg.exec_()
 
     @pyqtSlot()
     def on_startclick(self):
@@ -1038,6 +1046,7 @@ class UISettings(QDialog):
             except :
                 status = 5
 
+            self.dryrunResult.append([status, status1, status2])
             status = max([status, status1, status2])
             if status==0:
                 self.lblStatus.setText("")
