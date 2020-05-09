@@ -159,7 +159,7 @@ class UISettings(QDialog):
         self.config=settings.DEFAULTCONFIG
         self._loadConfigFile()
         self.updateProfile()
-        self.imageview.connect(self.someFunction)
+        self.imageview.connect(self._ShowpixmapGView)
         self.ViewerPreViewMode.connect(self.PreviewMode)
         self.ClearImageShow.connect(self._ClearImageShow)
         self.ShowRepeatTime.connect(self._ShowRepeatTime)
@@ -171,10 +171,15 @@ class UISettings(QDialog):
         self.leDeviceID.editingFinished.connect(self.on_imei_editfinished)
         self.leModel.editingFinished.connect(self.on_model_editfinished)
         #self.leProfile.hide()
-        self.previewEvent = threading.Event()
+        #self.previewEvent = threading.Event()
+
         self.imageTop.SetCamera(PhotoViewer.CAMERA.TOP)
         self.imageLeft.SetCamera(PhotoViewer.CAMERA.LEFT)
         self.imageRight.SetCamera(PhotoViewer.CAMERA.RIGHT)
+        self.lblImageTop.SetCamera(PhotoViewer.CAMERA.TOP)
+        self.lblImageLeft.SetCamera(PhotoViewer.CAMERA.LEFT)
+        self.lblImageRight.SetCamera(PhotoViewer.CAMERA.RIGHT)
+
         self.startKey =False
         #self.clientleft = ServerProxy(myconstdef.URL_LEFT, allow_none=True)
         self.clienttop = ServerProxy(myconstdef.URL_TOP, allow_none=True)
@@ -217,6 +222,8 @@ class UISettings(QDialog):
         self.scResult = QtWidgets.QShortcut(QKeySequence("Ctrl+R"), self)
         self.scResult.activated.connect(self.On_ShowDryRunResult)
 
+        self.scDelProfile = QtWidgets.QShortcut(QKeySequence("Ctrl+D"), self)
+        self.scDelProfile.activated.connect(self.On_DeleteProfile)
         ######Add ShortCut End########### 
         self.threadPreview = None
         self.threadDryrun = None
@@ -232,19 +239,29 @@ class UISettings(QDialog):
         self.loadImeidb()
         self.serialThread.start()
         self.dryrunResult = []
+        self.ChangeView(self.isProfilestatus)
+
 
     def PreviewMode(self, v):
         self.imageTop.toggleReviewMode(v)
         self.imageLeft.toggleReviewMode(v)
         self.imageRight.toggleReviewMode(v)
 
-    def someFunction(self, pixmap, v):
+    def _ShowpixmapGView(self, pixmap, v):
+        self.logger.info("_ShowpixmapGView ++")
         if v == PhotoViewer.CAMERA.TOP.value:
+            #try:
+            #    currentQRect = pixmap.rect()
+            #    pixmap1 = pixmap.copy(currentQRect)
+            #except Exception as e:
+            #    self.logger.exception(str(e))
+            #    return
             self.imageTop.ShowPreImage(pixmap)
         elif v == PhotoViewer.CAMERA.LEFT.value:
             self.imageLeft.ShowPreImage(pixmap)
         elif v == PhotoViewer.CAMERA.RIGHT.value:
             self.imageRight.ShowPreImage(pixmap)
+        self.logger.info("_ShowpixmapGView --")
 
     def loadImeidb(self):
         if os.path.isfile('imei2model.json'):
@@ -285,16 +302,17 @@ class UISettings(QDialog):
         self._getProfileName()        
 
     def StatusChange(self, value):
-        if not self.isAutoDetect:
-            return
         self.takelock.acquire()
         print("value is :"+str(value))
         if (value == 2):
-            self.OnPreview()
+            if self.isAutoDetect or self.isProfilestatus:
+                self.OnPreview()
         elif(value == 1):
-            self.previewEvent.set() 
+            #self.previewEvent.set() 
             #start process
-            self.on_startclick()
+            self._stopPreview()
+            if self.isAutoDetect:
+                self.on_startclick()
         self.takelock.release()
 
     #@staticmethod
@@ -314,8 +332,6 @@ class UISettings(QDialog):
             hbox2 = QHBoxLayout()
             hbox2.addWidget(embed_widget)
             self.wdtKeyBoard.setLayout(hbox2)
-
-
 
     def ShowKeyBoard(self):
         try:
@@ -366,19 +382,11 @@ class UISettings(QDialog):
         self.imageRight.setServerProxy(self.clientright)
 
     def closeEvent(self, event):
-        self.stop_prv.set()
+        self._stopPreview()
         self._saveConfigFile()
-        if self.threadPreview is not None:
-            while self.threadPreview.is_alive():
-                time.sleep(0.1)
         self._shutdown()
         self.serialThread.exit_event.set()
         self.close()
-
-
-    def resizeEvent(self, event):
-        #self.resized.emit()
-        return super(UISettings, self).resizeEvent(event)
 
     def changeStyle(self, styleName):
         QApplication.setStyle(QStyleFactory.create(styleName))
@@ -386,41 +394,6 @@ class UISettings(QDialog):
 
     def updateProfile(self):
         self.createprofiledirstruct("")
-        #self._profilepath=self.config["profilepath"]
-        #self.comboBox.addItems([name for name in os.listdir(self._profilepath) if os.path.isdir(os.path.join(self._profilepath, name))])
-        #self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
-
-    def PreviewCamera(self):
-        # Create the in-memory stream
-        self.logger.info("preview: thread is starting...")
-        self.stop_prv.clear()
-        #while not self.stop_prv.is_set():
-        stream = io.BytesIO()
-        with picamera.PiCamera() as camera:
-            camera.ISO = 50
-            camera.resolution = (640,480)
-            for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
-                if self.stop_prv.is_set():
-                    self.stop_prv.clear()
-                    break
-                stream.truncate()
-                stream.seek(0)
-                image = Image.open(stream)
-                imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-                pixmap = QPixmap.fromImage(imageq)
-                self.imageTop.ShowPreImage(pixmap)
-                #self.imageTop.pixmap = pixmap
-                stream.seek(0)
-                stream.truncate()
-
-                if self.stop_prv.is_set():
-                    self.stop_prv.clear()
-                    break
-                    
-            camera.close()
- 
-        self.stop_prv.clear()
-        self.logger.info("preview: thread ending...")
 
     def _GetImageShow(self):
         self.logger.info("preview: thread starting...")
@@ -429,25 +402,15 @@ class UISettings(QDialog):
         color: black
         ''')
         if self.isProfilestatus:
-            self.stop_prv.set()
-            return
-        self.imageTop.setImageScale()
-        self.imageTop.toggleReviewMode(True)
+            #return
+            self.imageTop.setImageScale()
+            self.imageTop.toggleReviewMode(True)
         self.stop_prv.clear()
         #logging.info(self.clientleft.startpause(False))
         self.logger.info(self.clienttop.startpause(False))
         while True:
-            #data = self.clientleft.preview().data
-            data = self.clienttop.preview().data
-            image = Image.open(io.BytesIO(data))
-            image = image.rotate(90, expand=True)
-            imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
-            pixmap = QPixmap.fromImage(imageq)
-            #self.imageTop.ShowPreImage(pixmap)
-            self.imageview.emit(pixmap, PhotoViewer.CAMERA.TOP.value)
             if self.stop_prv.is_set():
                 self.stop_prv.clear()
-                #self.clientleft.startpause(True)
                 for i in range(0,2):
                     while True:
                         try:
@@ -455,8 +418,23 @@ class UISettings(QDialog):
                         except :
                             continue
                         break
+                time.sleep(0.2)
                 break
+            else:
+                data = self.clienttop.preview().data
+                image = Image.open(io.BytesIO(data))
+                image = image.rotate(90, expand=True)
+                imageq = ImageQt(image) #convert PIL image to a PIL.ImageQt object
+                pixmap = QPixmap.fromImage(imageq)
+                if self.isProfilestatus:
+                    try:
+                        pixmapcp = pixmap.copy(pixmap.rect())
+                        self.imageview.emit(pixmap, PhotoViewer.CAMERA.TOP.value)
+                    except Exception as e:
+                        self.logger.exception(str(e))
 
+                else:
+                    self.lblImageTop.ShowPreImage(pixmap)
         self.stop_prv.clear()
         self.logger.info("preview: thread ending...")
 
@@ -473,29 +451,6 @@ class UISettings(QDialog):
             self.pbFinish.setEnabled(True)
             self.isAutoDetect = False
             self.config["autostart"] = False
-            '''
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            try:
-                self.imageTop.isProfile = False
-                self.imageLeft.isProfile = False
-                self.imageRight.isProfile = False
-                #self.leProfile.hide()
-                #self.comboBox.clear() 
-                #self.comboBox.addItems([name for name in os.listdir(self.config["profilepath"]) if os.path.isdir(os.path.join(self.config["profilepath"], name))])
-                #self.comboBox.setCurrentIndex(self.config["comboxindex"] if 'comboxindex' in self.config and self.config["comboxindex"]<self.comboBox.count() else 0)
-                #self.comboBox.show()
-                tl = Process(target=self.runsyncprofiles, args=(True,))
-                tl.start()
-                tr = Process(target=self.runsyncprofiles, args=(False,))
-                tr.start()
-                tl.join()
-                tr.join()
-
-            except Exception as e:
-                self.logger.exception(str(e))
-            finally:
-                QApplication.restoreOverrideCursor() 
-            '''
 
     @pyqtSlot()
     def On_ExitSettingMode(self):
@@ -507,7 +462,9 @@ class UISettings(QDialog):
         self.imageLeft.toggleReviewMode(True)
         self.imageRight.fitInView()
         self.imageRight.toggleReviewMode(True)
+        self.isAutoDetect = self.config["autostart"]
         self.isProfilestatus = False
+        self.ChangeView(self.isProfilestatus)
         if not self.isAutoDetect:
             self.pbStart.setEnabled(True)
             self.pbFinish.setEnabled(True)
@@ -519,12 +476,15 @@ class UISettings(QDialog):
         dlg = LoginDialog(self)
         if not dlg.exec_():
             return 
+        self.isAutoDetect = False
         self.tabSetting.setCurrentIndex(1)
+        self.pbtabDryrun.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 0, 0);''')
+        self.pbtabSetting.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 255, 0);''')
+        self.pbtabProfile.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 0, 0);''')
         self.leStationID.setText(self.config["stationid"] if 'stationid' in self.config else '1')
         self.isProfilestatus = True
+        self.ChangeView(self.isProfilestatus)
         self._saveConfigFile()
-        #self.pbStart.setEnabled(False)
-        #self.pbFinish.setEnabled(False)
 
     
     @pyqtSlot()
@@ -555,9 +515,7 @@ class UISettings(QDialog):
         self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  proname+".jpg")
         self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  proname+".jpg")
 
-        self.stop_prv.set() 
-        if self.stop_prv.is_set():
-            time.sleep(0.1)
+        self._stopPreview()
             
         self.profilename = proname
         self._loadProfile()
@@ -568,6 +526,14 @@ class UISettings(QDialog):
         self._saveConfigFile()
         self.On_ExitSettingMode()
 
+    def _stopPreview(self):
+        if self.threadPreview is not None and self.threadPreview.is_alive():
+            self.stop_prv.set() 
+            #if self.stop_prv.is_set():
+            #    time.sleep(0.1)
+            while self.threadPreview is not None and self.threadPreview.is_alive():
+                time.sleep(0.1)
+ 
 
     @pyqtSlot()
     def On_EditProfile(self):
@@ -577,6 +543,10 @@ class UISettings(QDialog):
             return             
         proname = self.listWidget.currentItem().text()
         
+        self._stopPreview()
+
+        
+
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             pathleft = os.path.join(self.sProfilePath, proname, "left")
@@ -586,17 +556,29 @@ class UISettings(QDialog):
             self.profileimages[PhotoViewer.CAMERA.TOP.value]=os.path.join(pathtop,  proname+".jpg")
             self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  proname+".jpg")
             self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  proname+".jpg")
-
-            if self.threadPreview!=None and self.threadPreview.is_alive():
-                self.stop_prv.set() 
-                if self.stop_prv.is_set():
-                    time.sleep(0.1)
-                
+            
             self.profilename = proname
             self._loadProfile()
             #do edit
         finally:
             QApplication.restoreOverrideCursor() 
+
+    @pyqtSlot()
+    def On_DeleteProfile(self):
+        if self.listWidget.currentRow()>=0:     
+            proname = self.listWidget.currentItem().text()
+            self.logger.info("delete:"+proname)            
+            self.clienttop.RemoveProfile(proname)
+            self.clientright.RemoveProfile(proname)
+            dirPath=os.path.join(self.data["profilepath"], proname)
+            try:
+                shutil.rmtree(dirPath)
+            except Exception as e:
+                print(e)
+                self.logger.exception(str(e))
+                self.logger.error('Error while deleting directory')
+            self.listWidget.takeItem(self.listWidget.currentRow())
+
 
     @pyqtSlot()
     def On_ShowProfile(self):
@@ -608,10 +590,6 @@ class UISettings(QDialog):
         
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            #self.imageTop.clear()
-            #self.imageLeft.clear()
-            #self.imageRight.clear()
-
             pathleft = os.path.join(self.sProfilePath, proname, "left")
             pathtop = os.path.join(self.sProfilePath, proname, "top")
             pathright = os.path.join(self.sProfilePath, proname, "right")
@@ -620,12 +598,11 @@ class UISettings(QDialog):
             self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  proname+".jpg")
             self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  proname+".jpg")
 
-            if self.threadPreview!=None and self.threadPreview.is_alive():
-                self.stop_prv.set() 
-                if self.stop_prv.is_set():
-                    time.sleep(0.1)
+            self._stopPreview()
                 
             self.profilename = proname
+            self.isProfilestatus = False
+            self.ChangeView(self.isProfilestatus)
             self._loadProfile()
             bbb = proname.split('_' )
             self.leModel.setText('_'.join(bbb[:-1]))
@@ -641,19 +618,27 @@ class UISettings(QDialog):
     def On_settingChange(self):
         if self.threadDryrun is not None and self.threadDryrun.is_alive():
             return
+
+        self.pbtabDryrun.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 0, 0);''')
+        self.pbtabSetting.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 0, 0);''')
+        self.pbtabProfile.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 0, 0);''')
+
         sender = self.sender()
         clickevent = sender.text()
         if clickevent == u'Setting':
             self.tabAllSetting.setCurrentIndex(0)
+            self.pbtabSetting.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 255, 0);''')
         elif clickevent == u'Profile':
             self.tabAllSetting.setCurrentIndex(1)
             self.listWidget.clear()
+            self.pbtabProfile.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 255, 0);''')
             
             self.listWidget.addItems([name for name in os.listdir(self.sProfilePath) if os.path.isdir(os.path.join(self.sProfilePath, name))])
             #for name in os.listdir(self.sProfilePath):
             #    if os.path.isdir(os.path.join(self.sProfilePath, name)):
             #        self.listWidget.addItem(name)
         else:
+            self.pbtabDryrun.setStyleSheet('''background-color:  rgb(255, 255, 255);color: rgb(0, 255, 0);''')
             self.tabAllSetting.setCurrentIndex(2)
             self.sbRepeatTime.setValue(self.config['repeattime']  if 'repeattime' in self.config else 100)
 
@@ -676,20 +661,6 @@ class UISettings(QDialog):
     def on_KeyBoardclick(self):
         self.ShowKeyBoard()
 
-    @pyqtSlot()
-    def on_settingclick(self):
-        #dlg = Settings(self, self.clientleft, self.clientright)
-        self.stop_prv.set() 
-        '''
-        dlg = Settings(self.clienttop, self.clientright, self)
-        if dlg.exec_():
-            self._loadConfigFile()
-            self.logger.info("Success!")
-        else:
-            self.logger.info("Cancel!")  
-        '''
-
-
     def __jason(self):
         self.isAutoDetect = False
         self.config['repeattime'] = self.sbRepeatTime.value()
@@ -707,7 +678,8 @@ class UISettings(QDialog):
 
     @pyqtSlot()
     def on_startPreview(self):
-        self.OnPreview()
+        if not self.isProfilestatus:
+            self.OnPreview()
     
     def _DirSub(self, argument):
         switcher = {
@@ -806,10 +778,9 @@ class UISettings(QDialog):
         else:
             #imagelabel.SetProfile(self.profilename, self.profilename+".jpg")
             if index==PhotoViewer.CAMERA.LEFT.value:
-                #imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index))
-                self.imageview.emit(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index), index)
-            else:
                 pass
+                #imagelabel.ShowPreImage(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index))
+                #self.imageview.emit(QPixmap("/tmp/ramdisk/phoneimage_%d.jpg" % index), index)
 
     def _drawtestScrew(self, index, imagelabel):
         ret=0
@@ -841,95 +812,45 @@ class UISettings(QDialog):
 
 
     def _ThreadTakepicture(self):
-        #self.takelock.acquire()
-        #status, status1, status2 = 0, 0, 0
         self.takepic.clear()
         try:
             self._showImage(PhotoViewer.CAMERA.TOP.value, self.imageTop)
         except Exception as ex:
             self.logger.exception(str(ex))
             status = 5
-        #finally:
-        #    self.takelock.release()
 
         self.logger.info("ending camera A and transfer")
-        self.takepic.set()
-
-    def testScrewResult(self, data):
-        ret = 0
-        for itemscrew in data:
-            if itemscrew[0] == np.nan or itemscrew[0] < 0.35:
-                ret = 2
-                break
-            elif itemscrew[0] >= 0.45:
-                pass
-            else:
-                if ret != 2:
-                    ret= 1 
-
-        return ret
 
     def DrawResultTop(self):
-        #self.imageTop.DrawImageResults(self.imageresults, None )
-        self.ClearImageShow.emit(0x1)
-        #self.imageTop.clear()
-        self.imageTop.imagedresult = 0
+        self.lblImageTop.clear()
+        self.lblImageTop.imagedresult = 0
         data = json.loads(self.clienttop.ResultTest(PhotoViewer.CAMERA.TOP.value))
         if len(data)>0:
-            #status1 = self.testScrewResult(data)
-            status1 = self.imageTop.DrawImageResults(data, QPixmap(self.profileimages[PhotoViewer.CAMERA.TOP.value]))
+            status1 = self.lblImageTop.DrawImageResults(data, QPixmap(self.profileimages[PhotoViewer.CAMERA.TOP.value]))
 
     def DrawResultLeft(self):
-        #self.imageLeft.clear()
-        self.ClearImageShow.emit(0x2)
-        self.imageLeft.imagedresult = 0
-        self.imageLeft.DrawImageResults(self.imageresults, None )
-        #data = json.loads(self.clientleft.ResultTest(1))
-        #if len(data)>0:
-        #    #status1 = self.testScrewResult(data)
-        #    status1 = self.imageLeft.DrawImageResults(data, QPixmap(self.profileimages[1]))
+        self.lblImageLeft.clear()
+        self.lblImageLeft.imagedresult = 0
+        self.lblImageLeft.DrawImageResults(self.imageresults, None )
 
     def DrawResultRight(self):
-        #self.imageRight.clear()
-        self.ClearImageShow.emit(0x4)
-        self.imageRight.imagedresult = 0
+        self.lblImageRight.clear()
+        self.lblImageRight.imagedresult = 0
         data = json.loads(self.clientright.ResultTest(PhotoViewer.CAMERA.RIGHT.value))
         if len(data)>0:
-            status2 = self.imageRight.DrawImageResults(data, QPixmap(self.profileimages[PhotoViewer.CAMERA.RIGHT.value]))
+            status2 = self.lblImageRight.DrawImageResults(data, QPixmap(self.profileimages[PhotoViewer.CAMERA.RIGHT.value]))
 
     def _loadProfile(self):
-        self.imageTop.DrawProfile(self.profilename)
-        self.imageLeft.DrawProfile(self.profilename)
-        self.imageRight.DrawProfile(self.profilename)
-
-        '''
-        for i in PhotoViewer.CAMERA:
-            imageName = self.profileimages[i.value]
-            if not os.path.exists(imageName):
-                continue
-            pre, ext = os.path.splitext(imageName)
-            screwTxt = pre+'.txt'
-            if not os.path.exists(screwTxt):
-                continue
-            centerpoint=[]
-            with open(screwTxt) as f:
-                for line in f:
-                    words = line.split()                    
-                    roi_0 = int(words[1][:-1])
-                    roi_1 = int(words[2][:-1])
-                    roi_2 = int(words[3][:-1])
-                    roi_3 = int(words[4])
-                    x = roi_0 + int((roi_1 - roi_0 + 1)/2)
-                    y = roi_2 + int((roi_3 - roi_2 + 1)/2)
-                    centerpoint.append((x,y))
-            
-            if i == PhotoViewer.CAMERA.TOP :
-                self.imageTop.DrawImageProfile(centerpoint, QPixmap(imageName))
-            elif i == PhotoViewer.CAMERA.LEFT :
-                self.imageLeft.DrawImageProfile(centerpoint, QPixmap(imageName))
-            elif i == PhotoViewer.CAMERA.RIGHT :
-                self.imageRight.DrawImageProfile(centerpoint, QPixmap(imageName))
-        '''
+        self.logger.info("_loadProfile++ ")
+        if self.isProfilestatus:
+            self.imageTop.DrawProfile(self.profilename)
+            self.imageLeft.DrawProfile(self.profilename)
+            self.imageRight.DrawProfile(self.profilename)
+        else:
+            self.lblImageTop.DrawProfile(self.profilename)
+            self.lblImageLeft.DrawProfile(self.profilename)
+            self.lblImageRight.DrawProfile(self.profilename)
+        self.logger.info("_loadProfile-- ")
 
     def _ClearImageShow(self, index):
         if index & 0x1 == 0x1:
@@ -957,7 +878,7 @@ class UISettings(QDialog):
             QMessageBox.question(self, 'Error', "Oh no! Profile name is empty.", QMessageBox.Cancel, QMessageBox.Cancel)
             return             
         
-        self.ClearImageShow.emit(0xf)
+        #self.ClearImageShow.emit(0xf)
 
         pathleft = os.path.join(self.sProfilePath, self.profilename, "left")
         pathtop = os.path.join(self.sProfilePath, self.profilename, "top")
@@ -968,9 +889,7 @@ class UISettings(QDialog):
         self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  self.profilename+".jpg")
 
         if self.threadPreview!=None and self.threadPreview.is_alive():
-            self.stop_prv.set() 
-            if self.stop_prv.is_set():
-                time.sleep(0.1)  
+            self._stopPreview()
         else:
             for i in range(0,2):
                 while True:
@@ -1019,29 +938,34 @@ class UISettings(QDialog):
             #self.takepic.wait()
             #self.takepic.clear()
             try:
-                self.logger.info("Start Draw Info")
+                self.logger.info("Start Draw Thread Info")
                 
-                threads=[]
+                #threads=[]
                 ttop = threading.Thread(target=self.DrawResultTop)
                 ttop.start()
-                threads.append(ttop)
-                self.logger.info("Draw top finish")
+                #threads.append(ttop)
                 
                 tleft = threading.Thread(target=self.DrawResultLeft)
                 tleft.start()
-                threads.append(tleft)
-                self.logger.info("Draw left finish")
+                #threads.append(tleft)
 
                 tright = threading.Thread(target=self.DrawResultRight)
                 tright.start()
-                threads.append(tright)
+                #threads.append(tright)
+                self.logger.info("Draw Thread started")
+
+                ttop.join()
+                self.logger.info("Draw top finish")
+                tleft.join()
+                self.logger.info("Draw left finish")
+                tright.join()
+                self.logger.info("Draw right finish")
+                #for t in threads:
+                #    t.join()
                 
-                for t in threads:
-                    t.join()
-                
-                status = self.imageTop.imagedresult
-                status1 = self.imageLeft.imagedresult
-                status2 = self.imageRight.imagedresult
+                status = self.lblImageTop.imagedresult
+                status1 = self.lblImageLeft.imagedresult
+                status2 = self.lblImageRight.imagedresult
                 self.logger.info("End Draw Info:%d:%d:%d"%(status, status1, status2))
             except :
                 status = 5
@@ -1180,9 +1104,7 @@ class UISettings(QDialog):
         self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  profilename+".jpg")
 
         if self.threadPreview!=None and self.threadPreview.is_alive():
-            self.stop_prv.set() 
-            if self.stop_prv.is_set():
-                time.sleep(0.1)  
+            self._stopPreview()  
         else:
             for i in range(0,2):
                 while True:
@@ -1236,6 +1158,13 @@ class UISettings(QDialog):
         finally:
             QApplication.restoreOverrideCursor() 
 
+    def ChangeView(self, b):
+        self.imageTop.setVisible(b)
+        self.imageLeft.setVisible(b)
+        self.imageRight.setVisible(b)
+        self.lblImageTop.setVisible(not b)
+        self.lblImageLeft.setVisible(not b)
+        self.lblImageRight.setVisible(not b)
 
 
 def lockFile(lockfile):

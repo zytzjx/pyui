@@ -66,7 +66,6 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.photoRightClicked.connect(self.MouseRightClick)
         self.showThreadImageUpdate.connect(self.UpdateImage)
 
-        self._camerapoisition=CAMERA.TOP
         self.CURSOR_NEW = QCursor(QPixmap(':/icons/cursor.png').scaled(PhotoViewer.MOUSEWIDTH, PhotoViewer.MOUSEWIDTH, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.CUR_CUESOR = self.cursor()
         self._imagepixmap = None
@@ -249,7 +248,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         if self.w == 0 or self.h ==0:
             self.w = self.width()
             self.h = self.height()
-            self.logger.info("uilabel:"+str(self.w)+"X"+str(self.h))
+            self.logger.info("uigview:"+str(self.w)+"X"+str(self.h))
 
     def drawForeground(self, painter, rect):        
         if self._empty or self.rightClickPoint[0].isNull():
@@ -273,15 +272,15 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     def DrawProfile(self, profilename):
         self.logger.info("DrawImageProfile ++ " + str(self._camerapoisition))
-        ret=0
+        ret = 0
         imagename=os.path.join(self.profilerootpath, profilename, self.DirSub(self._camerapoisition), profilename+".jpg")
         txtname=os.path.join(self.profilerootpath, profilename, self.DirSub(self._camerapoisition), profilename+".txt")
         if not os.path.exists(imagename):
             self.logger.info(imagename)
             return 1
         self.LoadProfilePoints(txtname)
-        self._imagepixmap = QPixmap(imagename)
-        painterInstance = QPainter(self._imagepixmap)
+        _imagepixmap = QPixmap(imagename)
+        painterInstance = QPainter(_imagepixmap)
         penRectangle = QPen(Qt.red)
         penRectangle.setWidth(3)
         painterInstance.setPen(penRectangle)
@@ -290,33 +289,10 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             # draw rectangle on painter
             painterInstance.drawEllipse(pt.centrpoint, pt.rect.width() / 2, pt.rect.height() / 2)
 
-        self.setPhoto(self._imagepixmap)
         painterInstance.end()
+        self.ShowPreImage(_imagepixmap)
         self.toggleReviewMode(False)
-        logging.info("DrawImageProfile -- ")
-        return ret
-
-    def DrawImageProfile(self, data, imagepic):
-        self.logger.info("DrawImageProfile ++ " + str(self._camerapoisition))
-        ret=0
-        if imagepic is not None:
-            self._imagepixmap = imagepic
-        if self._imagepixmap == None or len(data)==0:
-            return ret
-        self.logger.info(data)
-        painterInstance = QPainter(self._imagepixmap)
-        penRectangle = QPen(Qt.red)
-        penRectangle.setWidth(6)
-        painterInstance.setPen(penRectangle)
-
-        for pt in data:
-            # draw rectangle on painter
-            painterInstance.drawEllipse(QPoint(pt[0],pt[1]),myconstdef.screwWidth,myconstdef.screwHeight)
-
-        self.setPhoto(self._imagepixmap)
-        painterInstance.end()
-        self.toggleReviewMode(False)
-        logging.info("DrawImageProfile -- ")
+        self.logger.info("DrawImageProfile -- ")
         return ret
 
     def DrawImageResults(self, data, imagepic):

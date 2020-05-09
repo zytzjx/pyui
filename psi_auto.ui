@@ -453,7 +453,7 @@
           <enum>QTabWidget::South</enum>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="tbMain">
           <attribute name="title">
@@ -474,6 +474,22 @@
            </property>
            <item row="0" column="0">
             <widget class="PhotoViewer" name="imageTop"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="DetectLabel" name="lblImageTop">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(11, 152, 60);</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="scaledContents">
+              <bool>false</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -497,6 +513,22 @@
            <item row="0" column="0">
             <widget class="PhotoViewer" name="imageLeft"/>
            </item>
+           <item row="0" column="1">
+            <widget class="DetectLabel" name="lblImageLeft">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(11, 152, 60);</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="scaledContents">
+              <bool>false</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
          <widget class="QWidget" name="tbRight">
@@ -518,6 +550,22 @@
            </property>
            <item row="0" column="0">
             <widget class="PhotoViewer" name="imageRight"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="DetectLabel" name="lblImageRight">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(11, 152, 60);</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="scaledContents">
+              <bool>false</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -658,13 +706,13 @@ background-color: rgb(195, 195, 195);</string>
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_4">
                 <property name="spacing">
-                 <number>6</number>
+                 <number>3</number>
                 </property>
                 <item>
                  <widget class="QPushButton" name="pbtabSetting">
                   <property name="minimumSize">
                    <size>
-                    <width>50</width>
+                    <width>65</width>
                     <height>25</height>
                    </size>
                   </property>
@@ -676,7 +724,7 @@ background-color: rgb(195, 195, 195);</string>
                   </property>
                   <property name="styleSheet">
                    <string notr="true">background-color:  rgb(255, 255, 255);
-color: rgb(0, 0, 0);</string>
+color: rgb(0, 255, 0);</string>
                   </property>
                   <property name="text">
                    <string>Setting</string>
@@ -693,7 +741,7 @@ color: rgb(0, 0, 0);</string>
                  <widget class="QPushButton" name="pbtabProfile">
                   <property name="minimumSize">
                    <size>
-                    <width>50</width>
+                    <width>65</width>
                     <height>25</height>
                    </size>
                   </property>
@@ -722,7 +770,7 @@ color: rgb(0, 0, 0);</string>
                  <widget class="QPushButton" name="pbtabDryrun">
                   <property name="minimumSize">
                    <size>
-                    <width>50</width>
+                    <width>65</width>
                     <height>25</height>
                    </size>
                   </property>
@@ -1619,6 +1667,11 @@ color: rgb(0, 0, 0);</string>
    <extends>QGraphicsView</extends>
    <header>PhotoViewer</header>
   </customwidget>
+  <customwidget>
+   <class>DetectLabel</class>
+   <extends>QLabel</extends>
+   <header>detectLabel</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>leModel</tabstop>
@@ -1627,9 +1680,7 @@ color: rgb(0, 0, 0);</string>
   <tabstop>pbStart</tabstop>
   <tabstop>cbAutoStart</tabstop>
   <tabstop>tabSetting</tabstop>
-  <tabstop>pbtabSetting</tabstop>
   <tabstop>pbtabProfile</tabstop>
-  <tabstop>pbtabDryrun</tabstop>
   <tabstop>pbExitSetting</tabstop>
   <tabstop>pbClose</tabstop>
   <tabstop>pbTop</tabstop>
