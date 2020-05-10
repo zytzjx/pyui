@@ -50,7 +50,7 @@ class DetectLabel(QLabel):
         self.logger.info(data)
         painterInstance = QPainter(self._imagepixmap)
         penRectangle = QPen(Qt.red)
-        penRectangle.setWidth(12)
+        penRectangle.setWidth(3)
 
         for itemscrew in data:
             location = itemscrew[1]
@@ -65,10 +65,10 @@ class DetectLabel(QLabel):
                 penRectangle.setColor(Qt.yellow)
 
             painterInstance.setPen(penRectangle)
-            painterInstance.drawRect(QRect(QPoint(location[0], location[2]),QPoint(location[1], location[3])))
+            painterInstance.drawRect(QRect(QPoint(int(location[0]/4), int(location[2]/4)),QPoint(int(location[1]/4), int(location[3]/4))))
 
-        self.setPixmap(self._imagepixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))    
         painterInstance.end()
+        self.setPixmap(self._imagepixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))    
         self.imagedresult = ret
         self.logger.info("DrawImageResults -- " + str(self._camerapoisition))
         return ret

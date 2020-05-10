@@ -475,22 +475,6 @@
            <item row="0" column="0">
             <widget class="PhotoViewer" name="imageTop"/>
            </item>
-           <item row="0" column="1">
-            <widget class="DetectLabel" name="lblImageTop">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(11, 152, 60);</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="scaledContents">
-              <bool>false</bool>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
           </layout>
          </widget>
          <widget class="QWidget" name="tbLeft">
@@ -513,22 +497,6 @@
            <item row="0" column="0">
             <widget class="PhotoViewer" name="imageLeft"/>
            </item>
-           <item row="0" column="1">
-            <widget class="DetectLabel" name="lblImageLeft">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(11, 152, 60);</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="scaledContents">
-              <bool>false</bool>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
           </layout>
          </widget>
          <widget class="QWidget" name="tbRight">
@@ -550,22 +518,6 @@
            </property>
            <item row="0" column="0">
             <widget class="PhotoViewer" name="imageRight"/>
-           </item>
-           <item row="0" column="1">
-            <widget class="DetectLabel" name="lblImageRight">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(11, 152, 60);</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="scaledContents">
-              <bool>false</bool>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
            </item>
           </layout>
          </widget>
@@ -1666,11 +1618,6 @@ color: rgb(0, 0, 0);</string>
    <class>PhotoViewer</class>
    <extends>QGraphicsView</extends>
    <header>PhotoViewer</header>
-  </customwidget>
-  <customwidget>
-   <class>DetectLabel</class>
-   <extends>QLabel</extends>
-   <header>detectLabel</header>
   </customwidget>
  </customwidgets>
  <tabstops>
