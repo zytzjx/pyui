@@ -244,7 +244,7 @@ class UISettings(QDialog):
         self.imageRight.toggleReviewMode(v)
 
     def _ShowpixmapGView(self, pixmap, v):
-        self.logger.info("_ShowpixmapGView ++")
+        #self.logger.info("_ShowpixmapGView ++")
         if v == PhotoViewer.CAMERA.TOP.value:
             if self.previewpixEvent.is_set():
                 self.previewpixEvent.clear()
@@ -254,7 +254,7 @@ class UISettings(QDialog):
             self.imageLeft.ShowPreImage(pixmap)
         elif v == PhotoViewer.CAMERA.RIGHT.value:
             self.imageRight.ShowPreImage(pixmap)
-        self.logger.info("_ShowpixmapGView --")
+        #self.logger.info("_ShowpixmapGView --")
 
     def loadImeidb(self):
         if os.path.isfile('imei2model.json'):

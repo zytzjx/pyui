@@ -411,6 +411,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         return len(self.profilepoints) > 0
 
     def SaveProfile(self):
+        self.logger.info("SaveProfile ++ ")
         if len(self.profilepoints) == 0:
             return
         index = 0
@@ -423,9 +424,19 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             for x in self.profilepoints:
                 rects.append([x.lefttop.x(), x.lefttop.y(), x.rightbottom.x(), x.rightbottom.y()])
             self._client.SaveProfile(self._camerapoisition.value, rects)
+            for i in range(0,2):
+                while True:
+                    try:
+                        self._client.SaveProfile(self._camerapoisition.value, rects)
+                    except Exception as e:
+                        self.logger.exception(str(e))
+                        time.sleep(0.1)
+                        continue
+                    break
         else:
             for x in self.profilepoints:
                 self._savescrew(x, index)
                 index += 1
 
         self.profilepoints = []
+        self.logger.info("SaveProfile -- ")
