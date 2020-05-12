@@ -223,6 +223,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     def SetCamera(self, which):
         self._camerapoisition = which
+        self.logger = logging.getLogger('PSILOG')
 
     def SetProfile(self, profilename, filename):
         self.profile.profilename = profilename

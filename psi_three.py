@@ -244,17 +244,18 @@ class UISettings(QDialog):
         self.imageRight.toggleReviewMode(v)
 
     def _ShowpixmapGView(self, pixmap, v):
-        #self.logger.info("_ShowpixmapGView ++")
+        self.logger.info("_ShowpixmapGView ++")
         if v == PhotoViewer.CAMERA.TOP.value:
             if self.previewpixEvent.is_set():
-                self.previewpixEvent.clear()
-                return
+                if pixmap.height()==720:
+                    self.previewpixEvent.clear()
+                    return
             self.imageTop.ShowPreImage(pixmap)
         elif v == PhotoViewer.CAMERA.LEFT.value:
             self.imageLeft.ShowPreImage(pixmap)
         elif v == PhotoViewer.CAMERA.RIGHT.value:
             self.imageRight.ShowPreImage(pixmap)
-        #self.logger.info("_ShowpixmapGView --")
+        self.logger.info("_ShowpixmapGView --")
 
     def loadImeidb(self):
         if os.path.isfile('imei2model.json'):
@@ -1042,13 +1043,14 @@ class UISettings(QDialog):
             self.imageRight.AddProfilePoint()
     
     def On_SaveProfile(self):
+        self.logger.info("On_SaveProfile ++ ")
         self.imageTop.SaveProfile()
         self.imageLeft.SaveProfile()
         self.imageRight.SaveProfile()
         items = self.listWidget.findItems(self.profilename, Qt.MatchExactly)
         if len(items) == 0:
             self.listWidget.addItem(self.profilename)
-
+        self.logger.info("On_SaveProfile -- ")
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             tl = Process(target=self.runsyncprofiles, args=(True,))

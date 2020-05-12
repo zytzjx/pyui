@@ -312,11 +312,13 @@ class RequestHandler():#pyjsonrpc.HttpRequestHandler):
             if os.path.exists(profiletxt):
                 os.remove(profiletxt)
             shutil.copyfile("/tmp/ramdisk/phoneimage_%d.jpg" % index, os.path.join(self._profilepath, self._DirSub(index), self.profilename+".jpg"))
-            
-            self._indexscrew = 0
-            for rr in rects:
-                rect = QRect(QPoint(rr[0], rr[1]), QPoint(rr[2], rr[3]))
-                self._savescrewRect(index, rect)
+
+        self.logger.info("SaveProfile + ")    
+        self.logger.info(rects)
+        self._indexscrew = 0
+        for rr in rects:
+            rect = QRect(QPoint(rr[0], rr[1]), QPoint(rr[2], rr[3]))
+            self._savescrewRect(index, rect)
 
     def updateProfile(self, ppath):
         if not ppath or ppath=="":
