@@ -1,4 +1,16 @@
 #!/usr/bin/python3
+def lockFile(lockfile):
+    import fcntl
+    fp = open(lockfile, 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        return False
+    return True
+
+if not lockFile(".lock.pid"):
+    sys.exit(0)
+
 import sys
 import os
 import io
@@ -298,7 +310,12 @@ class UISettings(QDialog):
     def StatusChange(self, value):
         self.takelock.acquire()
         print("value is :"+str(value))
-        if (value == 2):
+        if (value == 3):
+            self.lblStatus.setText("ready")
+            self.lblStatus.setStyleSheet('''
+            color: black
+            ''')
+        elif (value == 2):
             if self.isAutoDetect or self.isProfilestatus:
                 self.OnPreview()
         elif(value == 1):
@@ -396,10 +413,7 @@ class UISettings(QDialog):
 
     def _GetImageShow(self):
         self.logger.info("preview: thread starting...")
-        self.lblStatus.setText("ready")
-        self.lblStatus.setStyleSheet('''
-        color: black
-        ''')
+        
         #if self.isProfilestatus:
             #return
         self.imageTop.setImageScale()
@@ -1074,6 +1088,12 @@ class UISettings(QDialog):
         self.imageTop.InitProfile()
         self.imageLeft.InitProfile()
         self.imageRight.InitProfile()
+        try:
+            self.clienttop.cleanprofileparam()
+            self.clientright.cleanprofileparam()
+        except Exception as e:
+            self.logger.exception(str(e))
+
 
     def On_ProfileTakePic(self):
         if self.leProfileModel.text()=='' or self.leProfileStationID.text() == '':
@@ -1147,15 +1167,6 @@ class UISettings(QDialog):
         finally:
             QApplication.restoreOverrideCursor() 
 
-
-def lockFile(lockfile):
-    import fcntl
-    fp = open(lockfile, 'w')
-    try:
-        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError:
-        return False
-    return True
 
 def CreateLog():
     import logging
