@@ -213,6 +213,7 @@ class UISettings(QDialog):
         self.pbDoneProfile.clicked.connect(self.On_DoneProfile)
         self.pbProfileSave.clicked.connect(self.On_SaveProfile)
         self.pbProfileNew.clicked.connect(self.On_ProfileNew)
+        self.pbProfileDelete.clicked.connect(self.On_DeleteProfile)
         self.leProfileStationID.returnPressed.connect(self.On_ProfileTakePic)
         self.leProfileModel.returnPressed.connect(self.On_ProfileTakePic)
         #self.listWidget.itemDoubleClicked.connect(self.On_ListWidgetDoubleClick)
@@ -256,11 +257,11 @@ class UISettings(QDialog):
         self.imageRight.toggleReviewMode(v)
 
     def _ShowpixmapGView(self, pixmap, v):
-        self.logger.info("_ShowpixmapGView ++")
+        self.logger.info("_ShowpixmapGView ++"+ str(v))
         if v == PhotoViewer.CAMERA.TOP.value:
-            if self.previewpixEvent.is_set():
+            if not self.previewpixEvent.is_set():
                 if pixmap.height()==720:
-                    self.previewpixEvent.clear()
+                    #self.previewpixEvent.clear()
                     return
             self.imageTop.ShowPreImage(pixmap)
         elif v == PhotoViewer.CAMERA.LEFT.value:
@@ -309,7 +310,7 @@ class UISettings(QDialog):
 
     def StatusChange(self, value):
         self.takelock.acquire()
-        print("value is :"+str(value))
+        self.logger.info("value is :"+str(value))
         if (value == 3):
             self.lblStatus.setText("ready")
             self.lblStatus.setStyleSheet('''
@@ -416,9 +417,11 @@ class UISettings(QDialog):
         
         #if self.isProfilestatus:
             #return
+        self.previewpixEvent.set()
+
         self.imageTop.setImageScale()
         self.imageTop.toggleReviewMode(True)
-        self.stop_prv.clear()
+        #self.stop_prv.clear()
         #logging.info(self.clientleft.startpause(False))
         self.logger.info(self.clienttop.startpause(False))
         while True:
@@ -442,8 +445,7 @@ class UISettings(QDialog):
                 self.imageview.emit(pixmap, PhotoViewer.CAMERA.TOP.value)
 
         self.stop_prv.clear()
-        if self.isProfilestatus:
-            self.previewpixEvent.set()
+        self.previewpixEvent.clear()
         self.logger.info("preview: thread ending...")
 
 
@@ -520,7 +522,7 @@ class UISettings(QDialog):
         self.profileimages[PhotoViewer.CAMERA.TOP.value]=os.path.join(pathtop,  proname+".jpg")
         self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  proname+".jpg")
         self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  proname+".jpg")
-
+        self.logger.info("On_ListWidgetDoubleClick stoppreview")
         self._stopPreview()
             
         self.profilename = proname
@@ -554,7 +556,7 @@ class UISettings(QDialog):
             QMessageBox.question(self, 'Error', "Oh no! Select Profile please.", QMessageBox.No, QMessageBox.No)
             return             
         proname = self.listWidget.currentItem().text()
-        
+        self.logger.info("On_EditProfile stoppreview")
         self._stopPreview()
 
         
@@ -610,6 +612,7 @@ class UISettings(QDialog):
             self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  proname+".jpg")
             self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  proname+".jpg")
 
+            self.logger.info("On_ShowProfile stoppreview")
             self._stopPreview()
                 
             self.profilename = proname
@@ -907,7 +910,7 @@ class UISettings(QDialog):
             self.ProfileImages[PhotoViewer.CAMERA.RIGHT.value]= QPixmap(self.profileimages[PhotoViewer.CAMERA.RIGHT.value]).scaledToHeight(820)
             self.ProfileImages[3] = self.profilename
 
-
+        self.logger.info("on_startclick stoppreview")
         self._stopPreview()
 
         self._profilepath = os.path.join(self.sProfilePath, self.profilename)
@@ -1120,7 +1123,7 @@ class UISettings(QDialog):
         self.profileimages[PhotoViewer.CAMERA.TOP.value]=os.path.join(pathtop,  profilename+".jpg")
         self.profileimages[PhotoViewer.CAMERA.LEFT.value]=os.path.join(pathleft,  profilename+".jpg")
         self.profileimages[PhotoViewer.CAMERA.RIGHT.value]=os.path.join(pathright,  profilename+".jpg")
-
+        self.logger.info("On_ProfileTakePic stop")
         self._stopPreview()  
 
         self._profilepath = os.path.join(self.sProfilePath, profilename)
