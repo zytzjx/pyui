@@ -1,6 +1,6 @@
 #!/usr/bin/python3
+import fcntl
 def lockFile(lockfile):
-    import fcntl
     fp = open(lockfile, 'w')
     try:
         fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -106,13 +106,18 @@ class StatusCheckThread(QThread):
                     if status!=1:
                         status=1
                         #do task start
-                elif not statusser.proximityStatus:
+                elif  statusser.laserStatus and not statusser.proximityStatus:
+                    if status != 3:# ready
+                        status = 3    
+                elif not statusser.proximityStatus and not statusser.laserStatus:
+                    if status != 3: 
+                        continue
                     if status!=2:
                         status=2
                         #start preview
-                elif not statusser.laserStatus:
-                    if status != 3:
-                        status = 3
+                #elif not statusser.laserStatus:
+                #    if status != 3:
+                #        status = 3
                 if not self.mylock.locked():
                     if oldstatus != status:
                         self.signal.emit(status)
@@ -581,10 +586,14 @@ class UISettings(QDialog):
     def On_DeleteProfile(self):
         if self.listWidget.currentRow()>=0:     
             proname = self.listWidget.currentItem().text()
-            self.logger.info("delete:"+proname)            
-            self.clienttop.RemoveProfile(proname)
-            self.clientright.RemoveProfile(proname)
-            dirPath=os.path.join(self.data["profilepath"], proname)
+            self.logger.info("delete:"+proname)     
+            try:       
+                self.clienttop.RemoveProfile(proname)
+                self.clientright.RemoveProfile(proname)
+            except Exception as e:
+                self.logger.exception(str(e))
+
+            dirPath=os.path.join(self.sProfilePath, proname)
             try:
                 shutil.rmtree(dirPath)
             except Exception as e:
@@ -1188,8 +1197,8 @@ def CreateLog():
     return logger
 
 if __name__ == "__main__":
-    if not lockFile(".lock.pid"):
-        sys.exit(0)
+    #if not lockFile(".lock.pid"):
+    #    sys.exit(0)
     #%(threadName)s       %(thread)d
     #logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s[%(thread)d] - %(levelname)s - %(message)s')
     logger = CreateLog()
