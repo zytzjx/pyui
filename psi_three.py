@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import fcntl
+import sys
 def lockFile(lockfile):
     fp = open(lockfile, 'w')
     try:
@@ -11,7 +12,6 @@ def lockFile(lockfile):
 if not lockFile(".lock.pid"):
     sys.exit(0)
 
-import sys
 import os
 import io
 import time
