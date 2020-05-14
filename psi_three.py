@@ -386,6 +386,8 @@ class UISettings(QDialog):
         self.isPreview = self.config['preview'] if 'preview' in self.config else True
         self.isAutoDetect = self.config["autostart"] if 'autostart' in self.config else True
         self.cbAutoStart.setChecked(self.isAutoDetect)
+        self.pbStart.setEnabled(not self.isAutoDetect)
+        self.pbFinish.setEnabled(not self.isAutoDetect)
         spath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"profiles")
         self.sProfilePath = self.config["profilepath"] if 'profilepath' in self.config else spath
         self.lblStationID.setText(self.config["stationid"] if 'stationid' in self.config else '1')
