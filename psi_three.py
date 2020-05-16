@@ -1,11 +1,15 @@
 #!/usr/bin/python3
-import fcntl
+import socket
 import sys
 def lockFile(lockfile):
-    fp = open(lockfile, 'w')
+    #fp = open(lockfile, 'w')
     try:
-        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError:
+        #fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        global s
+        s = socket.socket()
+        host = socket.gethostname()
+        s.bind((host, 60123))
+    except :
         return False
     return True
 

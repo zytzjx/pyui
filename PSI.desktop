@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=PSI Futuredial
+Comment=PSI
+Exec=python3 /home/pi/Desktop/pyUI/psi_three.py
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Icon=web-browser.png
+Path=/home/pi/Desktop/pyUI
+GenericName=PSI Futuredial Detect
+StartupNotify=false
